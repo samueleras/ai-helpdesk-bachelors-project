@@ -2,5 +2,11 @@
   "ollama": {
     "llm": "gemma2:9b-instruct-q4_K_M",
     "embedding_model": "mxbai-embed-large"
+  },
+  "milvus": {
+    "host": "http://localhost:19530",
+    "user": "aihelpdesk",
+    "metric_type": "COSINE",
+    "number_of_retrieved_documents": 3
   }
 }
