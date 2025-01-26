@@ -159,3 +159,12 @@ def retrieve_documents(query):
         search_params={"metric_type": config["milvus"]["metric_type"]},
         output_fields=["text", "metadata"],
     )[0]
+
+
+def store_ticket(ticket):
+
+    embedding = embedding_model.embed_documents(ticket["summary"])
+
+    data = [{"id": ticket["id"], "embedding": embedding, "title": ticket["title"]}]
+
+    milvus_client.insert(collection_name="collection_ticket", data=data)
