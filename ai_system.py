@@ -6,7 +6,12 @@ from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
-from prompts import queryPromptwithContext, grading_prompt, solvability_prompt
+from prompts import (
+    queryPromptwithContext,
+    grading_prompt,
+    solvability_prompt,
+    details_provided_prompt,
+)
 
 
 # Initialize the LangChain model (this part can be copied from your notebook)
@@ -21,6 +26,8 @@ def initialize_langchain(config):
     web_search_tool = TavilySearchResults(k=3)
 
     solvability_chain = solvability_prompt() | llm
+
+    details_provided_chain = details_provided_prompt() | llm
 
     class GraphState(TypedDict):
 
@@ -119,7 +126,20 @@ def initialize_langchain(config):
         return {"solvable": solvable}
 
     def check_details_provided(state):
-        return
+        input = state["input"]
+        chat_history = state["chat_history"]
+        documents = state["documents"]
+        documentsAsSystemMessage = [
+            SystemMessage(content=doc["entity"]["text"]) for doc in documents
+        ]
+        details_provided = details_provided_chain.invoke(
+            {
+                "documents": documentsAsSystemMessage,
+                "input": input,
+                "chat_history": chat_history,
+            }
+        ).content
+        return {"details_provided": details_provided}
 
     def decide_ask_further_questions_or_generate_ticket(state):
         return
