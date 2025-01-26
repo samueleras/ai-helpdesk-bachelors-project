@@ -4,7 +4,9 @@ from langchain_ollama import ChatOllama
 from typing import List
 from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
-from prompts import queryPromptwithContext
+from langchain_core.messages.system import SystemMessage
+from langchain_community.tools.tavily_search import TavilySearchResults
+from prompts import queryPromptwithContext, grading_prompt
 
 
 # Initialize the LangChain model (this part can be copied from your notebook)
@@ -13,6 +15,8 @@ def initialize_langchain(config):
     llm = ChatOllama(model=config["ollama"]["llm"])
 
     history_aware_query_chain = queryPromptwithContext() | llm
+
+    retrieval_grader_chain = grading_prompt() | llm
 
     class GraphState(TypedDict):
 
@@ -38,7 +42,29 @@ def initialize_langchain(config):
         return {"documents": documents, "queryPrompt": queryPrompt}
 
     def grade_documents(state):
-        return
+        input = state["input"]
+        documents = state["documents"]
+        chat_history = state["chat_history"]
+        filtered_docs = []
+        web_search = False
+        for doc in documents:
+            score = retrieval_grader_chain.invoke(
+                {
+                    "input": input,
+                    "documents": [SystemMessage(content=doc["entity"]["text"])],
+                    "chat_history": chat_history,
+                }
+            ).content[0]
+            print(score)
+            if score == "1":
+                print("Doc appended")
+                filtered_docs.append(doc)
+        if len(filtered_docs) < 2:
+            web_search = True
+        return {
+            "documents": filtered_docs,
+            "web_search": web_search,
+        }
 
     def decide_web_search(state):
         return
