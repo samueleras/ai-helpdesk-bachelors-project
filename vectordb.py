@@ -147,3 +147,15 @@ def initialize_milvus(config_file):
     if not milvus_client:
         raise ConnectionError("Connecting to Milvus failed.")
     _store_documents_in_vector_db(milvus_client)
+
+
+def retrieve_documents(query):
+    query_vector = embedding_model.embed_query(query)
+    return milvus_client.search(
+        collection_name="collection_rag",
+        anns_field="embedding",
+        data=[query_vector],
+        limit=config["milvus"]["number_of_retrieved_documents"],
+        search_params={"metric_type": config["milvus"]["metric_type"]},
+        output_fields=["text", "metadata"],
+    )[0]
