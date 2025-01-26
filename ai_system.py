@@ -1,14 +1,18 @@
 from dataclasses import dataclass
+from vectordb import retrieve_documents
 from langchain_ollama import ChatOllama
 from typing import List
 from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
+from prompts import queryPromptwithContext
 
 
 # Initialize the LangChain model (this part can be copied from your notebook)
 def initialize_langchain(config):
 
     llm = ChatOllama(model=config["ollama"]["llm"])
+
+    history_aware_query_chain = queryPromptwithContext() | llm
 
     class GraphState(TypedDict):
 
@@ -23,7 +27,15 @@ def initialize_langchain(config):
         ticket: bool
 
     def retrieve(state):
-        return
+        input = state["input"]
+        chat_history = state["chat_history"]
+        queryPrompt = state["queryPrompt"]
+        if not queryPrompt:
+            queryPrompt = history_aware_query_chain.invoke(
+                {"input": input, "chat_history": chat_history}
+            ).content
+        documents = retrieve_documents(queryPrompt)
+        return {"documents": documents, "queryPrompt": queryPrompt}
 
     def grade_documents(state):
         return
