@@ -18,6 +18,8 @@ def initialize_langchain(config):
 
     retrieval_grader_chain = grading_prompt() | llm
 
+        web_search_tool = TavilySearchResults(k=3)
+
     class GraphState(TypedDict):
 
         input: str
