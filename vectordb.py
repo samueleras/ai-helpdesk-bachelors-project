@@ -91,6 +91,39 @@ def _create_user_and_schema():
         )
 
 
+def _store_documents_in_vector_db(milvus_client):
+
+    loader = WebBaseLoader("https://docs.smith.langchain.com/user_guide")
+
+    documents = loader.load()
+
+    text_splitter = RecursiveCharacterTextSplitter()
+    text_chunks = []
+    metadata_list = []
+
+    for doc in documents:
+        for text_chunk in text_splitter.split_text(doc.page_content):
+            text_chunks.append(text_chunk)
+            metadata_list.append(doc.metadata)
+
+    embeddings = embedding_model.embed_documents(text_chunks)
+
+    data = [
+        {"embedding": embedding, "text": text, "metadata": metadata}
+        for embedding, text, metadata in zip(embeddings, text_chunks, metadata_list)
+    ]
+
+    milvus_client.insert(collection_name="collection_rag", data=data)
+
+    """ try:
+        result = milvus_client.delete(
+            collection_name="collection_rag", filter="id >= 0"
+        )
+        print(f"Deletion result: {result}")
+    except Exception as e:
+        print(f"Error during deletion: {e}") """
+
+
 def initialize_milvus(config_file):
     global milvus_client, config, embedding_model
     config = config_file
@@ -113,3 +146,4 @@ def initialize_milvus(config_file):
 
     if not milvus_client:
         raise ConnectionError("Connecting to Milvus failed.")
+    _store_documents_in_vector_db(milvus_client)
