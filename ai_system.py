@@ -6,7 +6,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
-from prompts import queryPromptwithContext, grading_prompt
+from prompts import queryPromptwithContext, grading_prompt, solvability_prompt
 
 
 # Initialize the LangChain model (this part can be copied from your notebook)
@@ -19,6 +19,8 @@ def initialize_langchain(config):
     retrieval_grader_chain = grading_prompt() | llm
 
     web_search_tool = TavilySearchResults(k=3)
+
+    solvability_chain = solvability_prompt() | llm
 
     class GraphState(TypedDict):
 
@@ -101,7 +103,20 @@ def initialize_langchain(config):
             return "check_solvability"
 
     def check_solvability(state):
-        return
+        input = state["input"]
+        chat_history = state["chat_history"]
+        documents = state["documents"]
+        documentsAsSystemMessage = [
+            SystemMessage(content=doc["entity"]["text"]) for doc in documents
+        ]
+        solvable = solvability_chain.invoke(
+            {
+                "documents": documentsAsSystemMessage,
+                "input": input,
+                "chat_history": chat_history,
+            }
+        ).content
+        return {"solvable": solvable}
 
     def check_details_provided(state):
         return
