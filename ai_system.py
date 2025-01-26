@@ -18,7 +18,7 @@ def initialize_langchain(config):
 
     retrieval_grader_chain = grading_prompt() | llm
 
-        web_search_tool = TavilySearchResults(k=3)
+    web_search_tool = TavilySearchResults(k=3)
 
     class GraphState(TypedDict):
 
@@ -69,10 +69,27 @@ def initialize_langchain(config):
         }
 
     def decide_web_search(state):
-        return
+        web_search = state["web_search"]
+        ticket = state["ticket"]
+        if web_search:
+            print("perform_web_search")
+            return "perform_web_search"
+        elif ticket:
+            print("check_details_provided")
+            return "check_details_provided"
+        else:
+            print("check_solvability")
+            return "check_solvability"
 
     def perform_web_search(state):
-        return
+        queryPrompt = state.get("queryPrompt")
+        documents = state.get("documents")
+        web_results = web_search_tool.invoke({"query": queryPrompt})
+        documents.extend(
+            {"entity": {"text": d["content"], "metadata": {"url": d["url"]}}}
+            for d in web_results
+        )
+        return {"documents": documents}
 
     def check_web_search_cause(state):
         return
