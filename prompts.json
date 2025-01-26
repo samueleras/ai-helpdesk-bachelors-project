@@ -6,5 +6,9 @@
   "grading_prompt": {
     "default_prompt": "You are a grader tasked with evaluating whether a given FACT is relevant to a QUESTION based on the provided chat history.\n\nInstructions:\n\nReview the chat history and QUESTION to understand the context.\nCheck if any statements in the FACT are relevant to the QUESTION.\nScoring:\n\nScore 1 if any statement in the FACT is relevant to the QUESTION.\nScore 0 if none of the statements in the FACT are relevant.",
     "followup_prompt": "Score only: Provide ONLY the score (1 or 0) without explanations or extra text."
+  },
+  "solvability_prompt": {
+    "default_prompt": "Determine if the user's issue can be solved without administrative privileges. Respond with '1' if possible, or with '0' if not or if the user already did a lot of troubleshooting.",
+    "followup_prompt": "Can this issue likely be resolved without administrative privileges? If yes, reply with '1', if no or if the user already did a lot of troubleshooting reply with '0' and give NO further explanation"
   }
 }

@@ -45,3 +45,18 @@ def grading_prompt():
             ),
         ]
     )
+
+
+def solvability_prompt():
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                prompts["solvability_prompt"]["default_prompt"],
+            ),
+            MessagesPlaceholder("documents"),
+            MessagesPlaceholder("chat_history"),
+            MessagesPlaceholder("input"),
+            ("system", prompts["solvability_prompt"]["followup_prompt"]),
+        ]
+    )

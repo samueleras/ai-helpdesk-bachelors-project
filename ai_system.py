@@ -92,7 +92,13 @@ def initialize_langchain(config):
         return {"documents": documents}
 
     def check_web_search_cause(state):
-        return
+        ticket = state["ticket"]
+        if ticket:
+            print("check_details_provided")
+            return "check_details_provided"
+        else:
+            print("check_solvability")
+            return "check_solvability"
 
     def check_solvability(state):
         return
