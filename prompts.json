@@ -2,5 +2,9 @@
   "queryPromptwithContext": {
     "default_prompt": "Create a concise search query based on the conversation below, focusing on the most recent input. Do not add explanations or extra text.",
     "followup_prompt": "Return only the search query"
+  },
+  "grading_prompt": {
+    "default_prompt": "You are a grader tasked with evaluating whether a given FACT is relevant to a QUESTION based on the provided chat history.\n\nInstructions:\n\nReview the chat history and QUESTION to understand the context.\nCheck if any statements in the FACT are relevant to the QUESTION.\nScoring:\n\nScore 1 if any statement in the FACT is relevant to the QUESTION.\nScore 0 if none of the statements in the FACT are relevant.",
+    "followup_prompt": "Score only: Provide ONLY the score (1 or 0) without explanations or extra text."
   }
 }

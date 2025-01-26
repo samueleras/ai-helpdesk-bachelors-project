@@ -27,3 +27,21 @@ def queryPromptwithContext():
             ),
         ]
     )
+
+
+def grading_prompt():
+    return ChatPromptTemplate(
+        [
+            (
+                "system",
+                prompts["grading_prompt"]["default_prompt"],
+            ),
+            MessagesPlaceholder("documents"),
+            MessagesPlaceholder("chat_history"),
+            MessagesPlaceholder("input"),
+            (
+                "system",
+                prompts["grading_prompt"]["followup_prompt"],
+            ),
+        ]
+    )
