@@ -168,3 +168,15 @@ def store_ticket(ticket):
     data = [{"id": ticket["id"], "embedding": embedding, "title": ticket["title"]}]
 
     milvus_client.insert(collection_name="collection_ticket", data=data)
+
+
+def retrieve_similar_tickets(ticket):
+    query_vector = embedding_model.embed_query(ticket["summary"])
+    return milvus_client.search(
+        collection_name="collection_ticket",
+        anns_field="embedding",
+        data=[query_vector],
+        limit=5,
+        search_params={"metric_type": "COSINE"},
+        output_fields=["title"],
+    )[0]
