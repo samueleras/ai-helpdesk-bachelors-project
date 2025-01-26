@@ -6,7 +6,31 @@ import os
 
 
 def _create_user_and_schema():
-    return
+    try:
+        milvus_client = MilvusClient(uri=config["milvus"]["host"], token="root:Milvus")
+    except:
+        print(
+            "Error: Cannot access root. Root password has to remain default for initial start up."
+        )
+        return
+
+    ### Create User, Roles, and Privileges ###
+    if config["milvus"]["user"] in milvus_client.list_users():
+        milvus_client.drop_user(user_name=config["milvus"]["user"])
+    milvus_client.create_user(
+        user_name=config["milvus"]["user"], password=os.getenv("MILVUS_PASSWORD")
+    )
+    if "vector_db_rw" not in milvus_client.list_roles():
+        milvus_client.create_role(role_name="vector_db_rw")
+    milvus_client.grant_privilege(
+        role_name="vector_db_rw",
+        object_type="Collection",
+        privilege="*",
+        object_name="*",
+    )
+    milvus_client.grant_role(
+        user_name=config["milvus"]["user"], role_name="vector_db_rw"
+    )
 
 
 def initialize_milvus(config_file):
