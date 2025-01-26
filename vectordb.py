@@ -32,6 +32,64 @@ def _create_user_and_schema():
         user_name=config["milvus"]["user"], role_name="vector_db_rw"
     )
 
+    ### Create Schema ###
+    if not milvus_client.has_collection(collection_name="collection_rag"):
+
+        schema = MilvusClient.create_schema(
+            auto_id=True,
+            enable_dynamic_field=False,
+        )
+
+        schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
+        schema.add_field(
+            field_name="embedding", datatype=DataType.FLOAT_VECTOR, dim=1024
+        )
+        schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=10000)
+        schema.add_field(field_name="metadata", datatype=DataType.JSON)
+
+        index_params = milvus_client.prepare_index_params()
+
+        index_params.add_index(field_name="id", index_type="STL_SORT")
+
+        index_params.add_index(
+            field_name="embedding",
+            index_type="AUTOINDEX",
+            metric_type=config["milvus"]["metric_type"],
+        )
+
+        milvus_client.create_collection(
+            collection_name="collection_rag",
+            schema=schema,
+            index_params=index_params,
+        )
+
+        schema = MilvusClient.create_schema(
+            auto_id=False,
+            enable_dynamic_field=False,
+        )
+
+        schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
+        schema.add_field(
+            field_name="embedding", datatype=DataType.FLOAT_VECTOR, dim=1024
+        )
+        schema.add_field(field_name="title", datatype=DataType.VARCHAR, max_length=200)
+
+        index_params = milvus_client.prepare_index_params()
+
+        index_params.add_index(field_name="id", index_type="STL_SORT")
+
+        index_params.add_index(
+            field_name="embedding",
+            index_type="AUTOINDEX",
+            metric_type="COSINE",
+        )
+
+        milvus_client.create_collection(
+            collection_name="collection_ticket",
+            schema=schema,
+            index_params=index_params,
+        )
+
 
 def initialize_milvus(config_file):
     global milvus_client, config, embedding_model
