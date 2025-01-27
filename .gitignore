@@ -14,6 +14,7 @@ dist-ssr
 venv_ai_helpdesk
 .env
 __pycache__
+rag_documents
 
 # Editor directories and files
 .vscode/*
