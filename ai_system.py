@@ -11,8 +11,11 @@ from prompts import (
     grading_prompt,
     solvability_prompt,
     details_provided_prompt,
-    troubleshooting_prompt,
     further_questions_prompt,
+    troubleshooting_prompt,
+    ticket_issue_description_prompt,
+    ticket_propose_solutions_prompt,
+    ticket_summary_prompt,
 )
 
 
@@ -34,6 +37,12 @@ def initialize_langchain(config):
     troubleshooting_chain = troubleshooting_prompt() | llm
 
     ask_further_questions_chain = further_questions_prompt() | llm
+
+    ticket_issue_description_chain = ticket_issue_description_prompt() | llm
+
+    ticket_propose_solutions_chain = ticket_propose_solutions_prompt() | llm
+
+    ticket_summary_chain = ticket_summary_prompt() | llm
 
     class GraphState(TypedDict):
 
@@ -208,7 +217,34 @@ def initialize_langchain(config):
         return {"generation": generation, "ticket": False}
 
     def generate_ticket(state):
-        return
+        chat_history = state["chat_history"]
+        documents = state["documents"]
+        documents_as_system_message = [
+            SystemMessage(content=doc["entity"]["text"]) for doc in documents
+        ]
+        print("generate_issue_description")
+        issue_description = ticket_issue_description_chain.invoke(
+            {"chat_history": chat_history}
+        ).content
+        print("generate_proposed_solutions")
+        proposed_solutions = ticket_propose_solutions_chain.invoke(
+            {
+                "issue_description": [SystemMessage(issue_description)],
+                "documents": documents_as_system_message,
+            }
+        ).content
+        generated_ticket = issue_description + "\n" + proposed_solutions
+        print("generate_ticket_summary")
+        ticket_summary = ticket_summary_chain.invoke(
+            {"ticket": [SystemMessage(content=issue_description)]}
+        ).content
+        return {
+            "generation": {
+                "ticket_content": generated_ticket,
+                "ticket_summary": ticket_summary,
+            },
+            "ticket": True,
+        }
 
     # Graph
     workflow = StateGraph(GraphState)
