@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test LangChain App</title>
+  </head>
+  <body>
+    <h1>Ask a Question</h1>
+    <form id="askForm">
+      <label for="question">Enter Question:</label>
+      <input type="text" id="question" name="question" />
+      <button type="submit">Submit</button>
+    </form>
+    <p id="response">Resp:</p>
+    <form id="ticketForm">
+      <button id="buttonTicket" type="button">Create Ticket</button>
+    </form>
+
+    <script>
+      let conversation = [];
+      let queryPrompt = "";
+      let ticket = false;
+      conversation = [
+        ["human", "Hi, my mouse does not work anymore."],
+        ["ai", "Hello, do you want me to help you with this issue?"],
+        ["human", "Yes"],
+        ["human", "Please create a ticket for me."],
+        [
+          "ai",
+          `I'd like to help you get your mouse working again! To do that, I need a bit more information. Can you tell me:
+          * **What operating system are you using?** (Windows, macOS, Linux)
+          * **When did the issue start?**  (Did something happen right before it stopped working?) 
+          * **Have you tried plugging your mouse into a different USB port?**
+          * **Is there any unusual behavior besides the mouse not working?** (e.g., flickering screen, other devices not responding)
+          The more details you can give me, the better I can assist you in finding a solution!  😊 `,
+        ],
+        [
+          "human",
+          "I am using WIndows. This morning, nothing happened. I tried using a different port but still did not work. There are no other behaviours.",
+        ],
+        [
+          "ai",
+          `Okay, thanks for those details! Let's try a few more things to see if we can get your mouse working again.
+          1. **Have you tried restarting your computer?** Sometimes a simple restart can resolve minor software glitches.
+          2. **What kind of mouse are you using?** (Wired or wireless?  Brand and model if you know it)
+          3. **If it's a wireless mouse, have you checked the batteries?** 
+          4. **Is there any chance your mouse driver is outdated or corrupted?**  
+
+          If none of these suggestions work, we might need to look into more advanced troubleshooting steps. 
+          Let me know how those go! 👍 `,
+        ],
+        [
+          "human",
+          "I did restart my computer. It is a wireless mouse. The batteries are charged. I can not look into the mouse driver.",
+        ],
+        [
+          "ai",
+          `Okay, since restarting and checking the batteries didn't help, let's try to narrow things down a bit more.  
+          * **When you connect your wireless mouse (assuming it uses a USB receiver), do you see any lights indicating it's powered on or connected?**
+          * **Have you tried connecting the receiver to a different USB port on your computer?** 
+          * **Is there a button on the bottom of your mouse that toggles between different connection modes or DPI settings? Have you checked if it's accidentally switched to something that might disable the mouse?**
+
+          If none of those things seem right, we can explore some additional troubleshooting steps.  
+
+
+          Let me know what you find! 💪 `,
+        ],
+        ["human", "Yes the lights are on."],
+        [
+          "ai",
+          `Okay, so the lights are on, which means the mouse itself is getting power and likely trying to connect. Let's try a few more things to see if we can get it recognized by your computer:
+          * **Have you tried unplugging and replugging in the USB receiver?** Sometimes this simple action can refresh the connection.
+          * **Do you have any other USB devices plugged into your computer?  Could there be interference from another device using the same frequency? Try unplugging some other USB devices temporarily to see if that helps.** 
+          * **Have you tried using a different USB port on your computer?** Sometimes specific ports can have issues.
+
+          Additionally, could you tell me:
+
+          * **What operating system are you running? (Windows 10, Windows 11, macOS, etc.)** 
+          * **When did this problem start occurring? Did anything change recently on your computer before the mouse stopped working? (Software updates, new hardware installations, etc.)**
+
+          The more information we have, the better chance we have of figuring out what's going on! 💪  `,
+        ],
+      ];
+
+      function submit(e, text) {
+        e.preventDefault();
+        if (ticket) {
+          createTicket(e, text);
+          return;
+        }
+
+        conversation.push(["human", text]);
+        console.log(conversation);
+
+        fetch("http://127.0.0.1:5000/ask", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ conversation }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            conversation.push(["ai", data.response.llm_output]);
+            queryPrompt = data.response.queryPrompt;
+            console.log(conversation);
+            console.log("QueryPrompt: ", queryPrompt);
+            document.getElementById("response").innerText =
+              "Answer: " + data.response.llm_output;
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      function createTicket(e, text) {
+        e.preventDefault();
+
+        ticket = true;
+        conversation.push(["human", text]);
+
+        console.log(conversation);
+
+        fetch("http://127.0.0.1:5000/create_ticket", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ conversation, queryPrompt }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            conversation.push(["ai", data.response.llm_output]);
+            console.log(conversation);
+            document.getElementById("response").innerText =
+              "Answer: " + data.response.llm_output;
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      document
+        .getElementById("askForm")
+        .addEventListener("submit", (e) =>
+          submit(e, document.getElementById("question").value)
+        );
+
+      document
+        .getElementById("buttonTicket")
+        .addEventListener("click", (e) =>
+          createTicket(e, "Please create a ticket for me.")
+        );
+    </script>
+  </body>
+</html>
