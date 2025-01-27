@@ -20,6 +20,12 @@ from prompts import (
 )
 
 
+@dataclass
+class LangChainModel:
+    predict_custom_agent_local_answer: callable
+    initiate_ticket_creation: callable
+
+
 # Initialize the LangChain model (this part can be copied from your notebook)
 def initialize_langchain(config):
 
@@ -352,3 +358,5 @@ def initialize_langchain(config):
             "queryPrompt": state_dict["queryPrompt"],
             "ticket": state_dict["ticket"],
         }
+
+    return LangChainModel(predict_custom_agent_local_answer, initiate_ticket_creation)
