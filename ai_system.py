@@ -151,7 +151,14 @@ def initialize_langchain(config):
             return "further_questions"
 
     def decide_generate_solution_or_offer_ticket(state):
-        return
+        solvable = state["solvable"]
+        print(solvable[0])
+        if solvable[0] == "1":
+            print("generate_solution")
+            return "generate_solution"
+        else:
+            print("offer_ticket")
+            return "offer_ticket"
 
     def generate_solution(state):
         return
