@@ -75,3 +75,21 @@ def details_provided_prompt():
             ("system", prompts["details_provided_prompt"]["followup_prompt"]),
         ]
     )
+
+
+def troubleshooting_prompt():
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                prompts["troubleshooting_prompt"]["default_prompt"],
+            ),
+            MessagesPlaceholder("documents"),
+            MessagesPlaceholder("chat_history"),
+            MessagesPlaceholder("input"),
+            (
+                "system",
+                prompts["troubleshooting_prompt"]["followup_prompt"],
+            ),
+        ]
+    )
