@@ -142,7 +142,13 @@ def initialize_langchain(config):
         return {"details_provided": details_provided}
 
     def decide_ask_further_questions_or_generate_ticket(state):
-        return
+        details_provided = state["details_provided"]
+        if details_provided[0] == "1":
+            print("generate_ticket")
+            return "generate_ticket"
+        else:
+            print("further_questions")
+            return "further_questions"
 
     def decide_generate_solution_or_offer_ticket(state):
         return
