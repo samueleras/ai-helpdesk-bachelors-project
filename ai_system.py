@@ -180,7 +180,13 @@ def initialize_langchain(config):
         return {"generation": generation}
 
     def offer_ticket(state):
-        return
+        text = """
+            It seems the issue is more complex than what can be resolved through standard troubleshooting.
+            To address this, I recommend escalating it to our specialized technical support team, who have the tools and expertise to handle more advanced problems.
+            \nWe can generate a support ticket to document all details, including the troubleshooting steps we've already taken, and forward it to the appropriate team for further investigation.
+            \nIf you'd like me to create a ticket on your behalf, please click the "Create Ticket" button below.
+                    Before submitting the ticket, I may need to ask you a few additional questions to gather all necessary information for our support team."""
+        return {"generation": text, "ticket": True}
 
     def further_questions(state):
         return
