@@ -3,6 +3,10 @@ from pymilvus import MilvusClient, DataType
 from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+from PyPDF2 import PdfReader
+from pathlib import Path
 
 
 def _create_user_and_schema():
@@ -13,7 +17,6 @@ def _create_user_and_schema():
             "Error: Cannot access root. Root password has to remain default for initial start up."
         )
         return
-
     ### Create User, Roles, and Privileges ###
     if config["milvus"]["user"] in milvus_client.list_users():
         milvus_client.drop_user(user_name=config["milvus"]["user"])
@@ -57,11 +60,14 @@ def _create_user_and_schema():
             metric_type=config["milvus"]["metric_type"],
         )
 
-        milvus_client.create_collection(
-            collection_name="collection_rag",
-            schema=schema,
-            index_params=index_params,
-        )
+        try:
+            milvus_client.create_collection(
+                collection_name="collection_rag",
+                schema=schema,
+                index_params=index_params,
+            )
+        except:
+            print("Collection already exists")
 
         schema = MilvusClient.create_schema(
             auto_id=False,
@@ -84,44 +90,98 @@ def _create_user_and_schema():
             metric_type="COSINE",
         )
 
-        milvus_client.create_collection(
-            collection_name="collection_ticket",
-            schema=schema,
-            index_params=index_params,
-        )
+        try:
+            milvus_client.create_collection(
+                collection_name="collection_ticket",
+                schema=schema,
+                index_params=index_params,
+            )
+        except:
+            print("Collection already exists")
 
 
-def _store_documents_in_vector_db(milvus_client):
+class DirectoryWatcher(FileSystemEventHandler):
+    def __init__(self, milvus_client):
+        self.milvus_client = milvus_client
+        self.last_event = ()  # Tracks the last event type for each file path
 
-    loader = WebBaseLoader("https://docs.smith.langchain.com/user_guide")
+    def on_created(self, event):
+        if not event.is_directory:
+            self.process_unique_event(
+                event.src_path, "created/modified", self.process_file
+            )
 
-    documents = loader.load()
+    def on_modified(self, event):
+        if not event.is_directory:
+            self.process_unique_event(
+                event.src_path, "created/modified", self.process_file
+            )
 
-    text_splitter = RecursiveCharacterTextSplitter()
-    text_chunks = []
-    metadata_list = []
+    def on_deleted(self, event):
+        if not event.is_directory:
+            self.process_unique_event(event.src_path, "deleted", self.delete_vectors)
 
-    for doc in documents:
-        for text_chunk in text_splitter.split_text(doc.page_content):
+    def process_unique_event(self, file_path, event_type, callback):
+        # Process each event just ones, as windows sometimes logs them multiple time
+        event = (file_path, event_type)
+        # Abort if this file was processed already
+        if self.last_event == event:
+            return
+        self.last_event = event
+        callback(file_path)
+
+    def process_file(self, file_path):
+        print(f"Processing file: {file_path}")
+        os.system(f'attrib -h "{file_path}"')
+        file_name = os.path.basename(file_path)
+        try:
+            reader = PdfReader(file_path)
+        except:
+            print("Error: File not readable.")
+            return
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text()
+        text_splitter = RecursiveCharacterTextSplitter()
+        text_chunks = []
+        metadata_list = []
+
+        for text_chunk in text_splitter.split_text(text):
             text_chunks.append(text_chunk)
-            metadata_list.append(doc.metadata)
+            metadata_list.append(file_name)
 
-    embeddings = embedding_model.embed_documents(text_chunks)
+        embeddings = embedding_model.embed_documents(text_chunks)
 
-    data = [
-        {"embedding": embedding, "text": text, "metadata": metadata}
-        for embedding, text, metadata in zip(embeddings, text_chunks, metadata_list)
-    ]
+        data = [
+            {"embedding": embedding, "text": text, "metadata": metadata}
+            for embedding, text, metadata in zip(embeddings, text_chunks, metadata_list)
+        ]
 
-    milvus_client.insert(collection_name="collection_rag", data=data)
+        res = milvus_client.insert(collection_name="collection_rag", data=data)
+        print(res)
 
-    """ try:
-        result = milvus_client.delete(
-            collection_name="collection_rag", filter="id >= 0"
+    def delete_vectors(self, file_path):
+        print(f"Deleting vectors for file: {file_path}")
+        file_name = os.path.basename(file_path)
+        res = milvus_client.delete(
+            collection_name="collection_rag",
+            filter=f'metadata == "{file_name}"',
         )
-        print(f"Deletion result: {result}")
-    except Exception as e:
-        print(f"Error during deletion: {e}") """
+        print(res)
+
+
+def _watch_directory(milvus_client, directory):
+    event_handler = DirectoryWatcher(milvus_client)
+    observer = Observer()
+    observer.schedule(event_handler, directory, recursive=False)
+    print(f"Watching directory: {directory}")
+    observer.start()
+    try:
+        while observer.is_alive():
+            observer.join(1)
+    finally:
+        observer.stop()
+        observer.join()
 
 
 def initialize_milvus(config_file):
@@ -146,7 +206,17 @@ def initialize_milvus(config_file):
 
     if not milvus_client:
         raise ConnectionError("Connecting to Milvus failed.")
-    _store_documents_in_vector_db(milvus_client)
+    # Clear whole vector db
+    """ try:
+        result = milvus_client.delete(
+            collection_name="collection_rag", filter="id >= 0"
+        )
+        print(f"Deletion result: {result}")
+    except Exception as e:
+        print(f"Error during deletion: {e}") """
+    _watch_directory(
+        milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
+    )
 
 
 def retrieve_documents(query):
