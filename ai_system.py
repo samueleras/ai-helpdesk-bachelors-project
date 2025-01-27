@@ -332,3 +332,23 @@ def initialize_langchain(config):
         return {
             "llm_output": state_dict["generation"],
         }
+
+    def initiate_ticket_creation(conversation, queryPrompt):
+        print("ticket_creation.....")
+        input = conversation.pop()
+        chat_history = conversation
+        config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+        state_dict = custom_graph.invoke(
+            {
+                "input": input,
+                "chat_history": chat_history,
+                "queryPrompt": queryPrompt,
+                "ticket": True,
+            },
+            config,
+        )
+        return {
+            "llm_output": state_dict["generation"],
+            "queryPrompt": state_dict["queryPrompt"],
+            "ticket": state_dict["ticket"],
+        }
