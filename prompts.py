@@ -111,3 +111,48 @@ def further_questions_prompt():
             ),
         ]
     )
+
+
+def ticket_issue_description_prompt():
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                prompts["ticket_issue_description_prompt"]["default_prompt"],
+            ),
+            MessagesPlaceholder("chat_history"),
+            (
+                "system",
+                prompts["ticket_issue_description_prompt"]["followup_prompt"],
+            ),
+        ]
+    )
+
+
+def ticket_propose_solutions_prompt():
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                prompts["ticket_propose_solutions_prompt"]["default_prompt"],
+            ),
+            MessagesPlaceholder("issue_description"),
+            MessagesPlaceholder("documents"),
+            (
+                "system",
+                prompts["ticket_propose_solutions_prompt"]["followup_prompt"],
+            ),
+        ]
+    )
+
+
+def ticket_summary_prompt():
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                prompts["ticket_summary_prompt"]["default_prompt"],
+            ),
+            MessagesPlaceholder("ticket"),
+        ]
+    )

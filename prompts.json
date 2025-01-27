@@ -22,5 +22,16 @@
   "further_questions_prompt": {
     "default_prompt": "There is some information missing in the conversation below to solve the mentioned issue. Determine which information would be useful and can be provided by the user by using your knowledge and the documents provided.",
     "followup_prompt": "Ask only a few important questions to assure this issue can be solved. Tell the user the answers are needed for the ticket generation."
+  },
+  "ticket_issue_description_prompt": {
+    "default_prompt": "Analyze the provided conversation and generate a comprehensive, in-depth explanation of the user's issue. \n Include all relevant details such as background information, specific error messages, affected systems, processes, and software or OS versions. \n Provide a detailed explanation of the troubleshooting steps already performed by the user.\n Ensure the explanation provides full context, captures technical details thoroughly.",
+    "followup_prompt": "Generate the explanation strictly following the above instructions, providing maximum technical detail and context without providing a title or additional introductional text."
+  },
+  "ticket_propose_solutions_prompt": {
+    "default_prompt": "Analyze the provided issue description, troubleshooting steps, and relevant documents to generate possible solutions or hypotheses \n that a helpdesk technician could perform to resolve the issue.\n Ensure the solutions are actionable, technically detailed, and based on the available information. \n If applicable, incorporate relevant insights or context from the provided documents.\n\n - Provide well-reasoned, in-depth solutions or hypotheses to address the issue.\n - Tailor solutions to the context of the provided issue and troubleshooting steps.",
+    "followup_prompt": "Strictly adhere to the above instructions and provide comprehensive solutions or hypotheses with technical accuracy and clear reasoning."
+  },
+  "ticket_summary_prompt": {
+    "default_prompt": "Generate a concise summary of the ticket provided:"
   }
 }
