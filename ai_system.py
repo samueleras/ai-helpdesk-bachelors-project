@@ -6,6 +6,7 @@ from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
+import uuid
 from prompts import (
     queryPromptwithContext,
     grading_prompt,
@@ -312,3 +313,22 @@ def initialize_langchain(config):
     workflow.add_edge("generate_ticket", END)
 
     custom_graph = workflow.compile()
+
+    def predict_custom_agent_local_answer(conversation):
+        input = conversation.pop()
+        chat_history = conversation
+        print("chat_history: ", chat_history)
+        print("question: ", input)
+        config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+        state_dict = custom_graph.invoke(
+            {
+                "input": input,
+                "chat_history": chat_history,
+                "queryPrompt": "",
+                "ticket": False,
+            },
+            config,
+        )
+        return {
+            "llm_output": state_dict["generation"],
+        }
