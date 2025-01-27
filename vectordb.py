@@ -100,6 +100,51 @@ def _create_user_and_schema():
             print("Collection already exists")
 
 
+def _initialize_directory(milvus_client, directory):
+    res = milvus_client.query(
+        collection_name="collection_rag",
+        limit=1,
+        filter="id >= 0",
+    )
+
+    # Abort if there are already entries in the vector db
+    if res:
+        return
+
+    path = Path(directory)
+    pdf_files = list(path.glob("*.pdf"))
+
+    for file in pdf_files:
+        file_path = path / file
+        file_name = os.path.basename(file_path)
+        os.system(f'attrib -h "{file_path}"')
+        try:
+            reader = PdfReader(file_path)
+        except:
+            print("Error: File not readable.")
+            return
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text()
+        text_splitter = RecursiveCharacterTextSplitter()
+        text_chunks = []
+        metadata_list = []
+
+        for text_chunk in text_splitter.split_text(text):
+            text_chunks.append(text_chunk)
+            metadata_list.append(file_name)
+
+        embeddings = embedding_model.embed_documents(text_chunks)
+
+        data = [
+            {"embedding": embedding, "text": text, "metadata": metadata}
+            for embedding, text, metadata in zip(embeddings, text_chunks, metadata_list)
+        ]
+
+        res = milvus_client.insert(collection_name="collection_rag", data=data)
+        print(res)
+
+
 class DirectoryWatcher(FileSystemEventHandler):
     def __init__(self, milvus_client):
         self.milvus_client = milvus_client
@@ -214,6 +259,9 @@ def initialize_milvus(config_file):
         print(f"Deletion result: {result}")
     except Exception as e:
         print(f"Error during deletion: {e}") """
+    _initialize_directory(
+        milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
+    )
     _watch_directory(
         milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
     )
