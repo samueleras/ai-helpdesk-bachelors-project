@@ -18,5 +18,9 @@
   "troubleshooting_prompt": {
     "default_prompt": "Assist the user in troubleshooting their issue using the provided documents and chat history. Follow these guidelines:\n - Propose only solutions that can be performed without requiring administrative privileges.\n - Ensure the solutions are easy to follow and executable by a regular user.\n - Avoid referencing the source of the documents or mentioning their existence.\n - Focus on actionable, step-by-step solutions that address the user's issue effectively.",
     "followup_prompt": "Provide solutions strictly adhering to the above guidelines. Ensure they are clear, simple, and do not assume administrative rights or access."
+  },
+  "further_questions_prompt": {
+    "default_prompt": "There is some information missing in the conversation below to solve the mentioned issue. Determine which information would be useful and can be provided by the user by using your knowledge and the documents provided.",
+    "followup_prompt": "Ask only a few important questions to assure this issue can be solved. Tell the user the answers are needed for the ticket generation."
   }
 }
