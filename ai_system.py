@@ -11,6 +11,7 @@ from prompts import (
     grading_prompt,
     solvability_prompt,
     details_provided_prompt,
+    troubleshooting_prompt,
 )
 
 
@@ -28,6 +29,8 @@ def initialize_langchain(config):
     solvability_chain = solvability_prompt() | llm
 
     details_provided_chain = details_provided_prompt() | llm
+
+    troubleshooting_chain = troubleshooting_prompt() | llm
 
     class GraphState(TypedDict):
 
@@ -161,7 +164,20 @@ def initialize_langchain(config):
             return "offer_ticket"
 
     def generate_solution(state):
-        return
+        input = state["input"]
+        documents = state["documents"]
+        chat_history = state["chat_history"]
+        documentsAsSystemMessage = [
+            SystemMessage(content=doc["entity"]["text"]) for doc in documents
+        ]
+        generation = troubleshooting_chain.invoke(
+            {
+                "documents": documentsAsSystemMessage,
+                "input": input,
+                "chat_history": chat_history,
+            }
+        ).content
+        return {"generation": generation}
 
     def offer_ticket(state):
         return
