@@ -12,6 +12,7 @@ from prompts import (
     solvability_prompt,
     details_provided_prompt,
     troubleshooting_prompt,
+    further_questions_prompt,
 )
 
 
@@ -31,6 +32,8 @@ def initialize_langchain(config):
     details_provided_chain = details_provided_prompt() | llm
 
     troubleshooting_chain = troubleshooting_prompt() | llm
+
+    ask_further_questions_chain = further_questions_prompt() | llm
 
     class GraphState(TypedDict):
 
@@ -189,7 +192,20 @@ def initialize_langchain(config):
         return {"generation": text, "ticket": True}
 
     def further_questions(state):
-        return
+        input = state["input"]
+        chat_history = state["chat_history"]
+        documents = state["documents"]
+        documentsAsSystemMessage = [
+            SystemMessage(content=doc["entity"]["text"]) for doc in documents
+        ]
+        generation = ask_further_questions_chain.invoke(
+            {
+                "documents": documentsAsSystemMessage,
+                "input": input,
+                "chat_history": chat_history,
+            }
+        ).content
+        return {"generation": generation, "ticket": False}
 
     def generate_ticket(state):
         return
