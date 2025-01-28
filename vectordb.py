@@ -1,6 +1,5 @@
 from langchain_ollama import OllamaEmbeddings
 from pymilvus import MilvusClient, DataType
-from langchain_community.document_loaders import WebBaseLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
 from watchdog.observers import Observer
@@ -182,7 +181,7 @@ class DirectoryWatcher(FileSystemEventHandler):
         try:
             reader = PdfReader(file_path)
         except:
-            print("Error: File not readable.")
+            print("Error: File not readable. Only pdf files are supported.")
             return
         text = ""
         for page in reader.pages:
@@ -242,10 +241,12 @@ def initialize_milvus(config_file):
                 uri=config["milvus"]["host"],
                 token=config["milvus"]["user"] + ":" + os.getenv("MILVUS_PASSWORD"),
             )
-            if not milvus_client.has_collection(collection_name="collection_rag"):
-                raise Exception
+            milvus_client.load_collection(collection_name="collection_rag")
+            milvus_client.load_collection(collection_name="collection_ticket")
         except:
-            print("Creating user or adjusting password")
+            print(
+                "Creating user or adjusting password and creating schema if it does not exist."
+            )
             _create_user_and_schema()
         attempts += 1
 
