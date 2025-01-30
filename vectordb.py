@@ -6,6 +6,9 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from PyPDF2 import PdfReader
 from pathlib import Path
+import threading
+
+observer_started = False
 
 
 def _create_user_and_schema():
@@ -229,7 +232,7 @@ def _watch_directory(milvus_client, directory):
 
 
 def initialize_milvus(config_file):
-    global milvus_client, config, embedding_model
+    global milvus_client, config, embedding_model, observer_started
     config = config_file
     embedding_model = OllamaEmbeddings(model=config["ollama"]["embedding_model"])
     milvus_client = None
@@ -241,6 +244,7 @@ def initialize_milvus(config_file):
                 uri=config["milvus"]["host"],
                 token=config["milvus"]["user"] + ":" + os.getenv("MILVUS_PASSWORD"),
             )
+            print("Load available Collections:", milvus_client.list_collections())
             milvus_client.load_collection(collection_name="collection_rag")
             milvus_client.load_collection(collection_name="collection_ticket")
         except:
@@ -263,9 +267,15 @@ def initialize_milvus(config_file):
     _initialize_directory(
         milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
     )
-    _watch_directory(
-        milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
+    watcher_thread = threading.Thread(
+        target=_watch_directory,
+        args=(
+            milvus_client,
+            config["milvus"]["rag_documents_folder_absolute_path"],
+        ),
+        daemon=True,
     )
+    watcher_thread.start()
 
 
 def retrieve_documents(query):
