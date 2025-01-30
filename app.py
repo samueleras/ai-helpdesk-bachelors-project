@@ -95,6 +95,7 @@ def create_ticket():
 
                 response = {
                     "ticket_id": ticket_id,
+                    "llm_output": content,
                 }
                 break  # Exit the loop on success
 
@@ -112,4 +113,4 @@ def create_ticket():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
