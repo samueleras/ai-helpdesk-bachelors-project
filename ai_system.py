@@ -337,6 +337,7 @@ def initialize_langchain(config):
         )
         return {
             "llm_output": state_dict["generation"],
+            "ticket": state_dict["ticket"],
         }
 
     def initiate_ticket_creation(conversation, queryPrompt):
