@@ -1,14 +1,13 @@
 from dataclasses import dataclass
 from vectordb import retrieve_documents
 from langchain_ollama import ChatOllama
-from typing import List
-from typing_extensions import TypedDict
 from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 import uuid
+from typing import Callable, Tuple, TypedDict, List
 from prompts import (
-    queryPromptwithContext,
+    query_prompt_with_context,
     grading_prompt,
     solvability_prompt,
     details_provided_prompt,
@@ -20,10 +19,23 @@ from prompts import (
 )
 
 
+class WorkflowRequestTyped(TypedDict):
+    conversation: List[Tuple[str, str]]
+    query_prompt: str
+    ticket: bool
+
+
+class WorkflowResponse(TypedDict):
+    llm_output: str
+    ticket_content: str
+    ticket_summary: str
+    query_prompt: str
+    ticket: bool
+
+
 @dataclass
 class LangChainModel:
-    predict_custom_agent_local_answer: callable
-    initiate_ticket_creation: callable
+    initiate_workflow: Callable[[WorkflowRequestTyped], WorkflowResponse]
 
 
 # Initialize the LangChain model (this part can be copied from your notebook)
@@ -31,7 +43,7 @@ def initialize_langchain(config):
 
     llm = ChatOllama(model=config["ollama"]["llm"])
 
-    history_aware_query_chain = queryPromptwithContext() | llm
+    history_aware_query_chain = query_prompt_with_context() | llm
 
     retrieval_grader_chain = grading_prompt() | llm
 
@@ -55,24 +67,27 @@ def initialize_langchain(config):
 
         input: str
         chat_history: str
-        queryPrompt: str
-        generation: str
+        query_prompt: str = ""
+        generation: str = ""
         web_search: bool
         solvable: str
         details_provided: str
         documents: List[dict]
         ticket: bool
+        ticket_content: str = ""
+        ticket_summary: str = ""
 
     def retrieve(state):
         input = state["input"]
         chat_history = state["chat_history"]
-        queryPrompt = state["queryPrompt"]
-        if not queryPrompt:
-            queryPrompt = history_aware_query_chain.invoke(
+        query_prompt = state["query_prompt"]
+        ticket = state["ticket"]
+        if not ticket:
+            query_prompt = history_aware_query_chain.invoke(
                 {"input": input, "chat_history": chat_history}
             ).content
-        documents = retrieve_documents(queryPrompt)
-        return {"documents": documents, "queryPrompt": queryPrompt}
+        documents = retrieve_documents(query_prompt)
+        return {"documents": documents, "query_prompt": query_prompt}
 
     def grade_documents(state):
         input = state["input"]
@@ -113,9 +128,9 @@ def initialize_langchain(config):
             return "check_solvability"
 
     def perform_web_search(state):
-        queryPrompt = state.get("queryPrompt")
-        documents = state.get("documents")
-        web_results = web_search_tool.invoke({"query": queryPrompt})
+        query_prompt = state.get("query_prompt")
+        documents = state.get("documents", [])
+        web_results = web_search_tool.invoke({"query": query_prompt})
         documents.extend(
             {"entity": {"text": d["content"], "metadata": {"url": d["url"]}}}
             for d in web_results
@@ -221,37 +236,38 @@ def initialize_langchain(config):
                 "chat_history": chat_history,
             }
         ).content
-        return {"generation": generation, "ticket": False}
+        return {"generation": generation}
 
     def generate_ticket(state):
-        chat_history = state["chat_history"]
-        documents = state["documents"]
-        documents_as_system_message = [
-            SystemMessage(content=doc["entity"]["text"]) for doc in documents
-        ]
-        print("generate_issue_description")
-        issue_description = ticket_issue_description_chain.invoke(
-            {"chat_history": chat_history}
-        ).content
-        print("generate_proposed_solutions")
-        proposed_solutions = ticket_propose_solutions_chain.invoke(
-            {
-                "issue_description": [SystemMessage(issue_description)],
-                "documents": documents_as_system_message,
-            }
-        ).content
-        generated_ticket = issue_description + "\n" + proposed_solutions
-        print("generate_ticket_summary")
-        ticket_summary = ticket_summary_chain.invoke(
-            {"ticket": [SystemMessage(content=issue_description)]}
-        ).content
-        return {
-            "generation": {
+        try:
+            chat_history = state["chat_history"]
+            documents = state["documents"]
+            documents_as_system_message = [
+                SystemMessage(content=doc["entity"]["text"]) for doc in documents
+            ]
+            print("generate_issue_description")
+            issue_description = ticket_issue_description_chain.invoke(
+                {"chat_history": chat_history}
+            ).content
+            print("generate_proposed_solutions")
+            proposed_solutions = ticket_propose_solutions_chain.invoke(
+                {
+                    "issue_description": [SystemMessage(issue_description)],
+                    "documents": documents_as_system_message,
+                }
+            ).content
+            generated_ticket = issue_description + "\n" + proposed_solutions
+            print("generate_ticket_summary")
+            ticket_summary = ticket_summary_chain.invoke(
+                {"ticket": [SystemMessage(content=issue_description)]}
+            ).content
+            return {
                 "ticket_content": generated_ticket,
                 "ticket_summary": ticket_summary,
-            },
-            "ticket": True,
-        }
+            }
+        except Exception as e:
+            print(f"ERROR in generate_ticket: {str(e)}")
+            raise RuntimeError(f"Ticket generation failed: {str(e)}")
 
     # Graph
     workflow = StateGraph(GraphState)
@@ -320,44 +336,35 @@ def initialize_langchain(config):
 
     custom_graph = workflow.compile()
 
-    def predict_custom_agent_local_answer(conversation):
-        input = conversation.pop()
-        chat_history = conversation
-        print("chat_history: ", chat_history)
-        print("question: ", input)
-        config = {"configurable": {"thread_id": str(uuid.uuid4())}}
-        state_dict = custom_graph.invoke(
-            {
-                "input": input,
-                "chat_history": chat_history,
-                "queryPrompt": "",
-                "ticket": False,
-            },
-            config,
-        )
-        return {
-            "llm_output": state_dict["generation"],
-            "ticket": state_dict["ticket"],
-        }
+    def initiate_workflow(
+        conversation: List[Tuple[str, str]], query_prompt: str, ticket: bool
+    ) -> WorkflowResponse:
+        try:
+            input = [conversation.pop()]
+            chat_history = conversation
+            print("chat_history: ", chat_history)
+            print("question: ", input)
+            config = {"configurable": {"thread_id": str(uuid.uuid4())}}
+            state_dict = custom_graph.invoke(
+                {
+                    "input": input,
+                    "chat_history": chat_history,
+                    "query_prompt": query_prompt,
+                    "ticket": ticket,
+                },
+                config,
+            )
+            response: WorkflowResponse = {
+                "llm_output": state_dict.get("generation", ""),
+                "ticket_content": state_dict.get("ticket_content", ""),
+                "ticket_summary": state_dict.get("ticket_summary", ""),
+                "query_prompt": state_dict.get("query_prompt", ""),
+                "ticket": state_dict["ticket"],
+            }
+            print(response)
+            return response
+        except Exception as e:
+            print(f"ERROR in initiate_workflow: {str(e)}")
+            raise RuntimeError(f"Workflow failed: {str(e)}")
 
-    def initiate_ticket_creation(conversation, queryPrompt):
-        print("ticket_creation.....")
-        input = conversation.pop()
-        chat_history = conversation
-        config = {"configurable": {"thread_id": str(uuid.uuid4())}}
-        state_dict = custom_graph.invoke(
-            {
-                "input": input,
-                "chat_history": chat_history,
-                "queryPrompt": queryPrompt,
-                "ticket": True,
-            },
-            config,
-        )
-        return {
-            "llm_output": state_dict["generation"],
-            "queryPrompt": state_dict["queryPrompt"],
-            "ticket": state_dict["ticket"],
-        }
-
-    return LangChainModel(predict_custom_agent_local_answer, initiate_ticket_creation)
+    return LangChainModel(initiate_workflow)
