@@ -25,7 +25,7 @@
 
     <script>
       let conversation = [];
-      let queryPrompt = "";
+      let query_prompt = "";
       let ticket = false;
       function toggleForm() {
         let form = document.getElementById("ticketForm");
@@ -41,33 +41,35 @@
 
       function submit(e, text) {
         e.preventDefault();
-        if (ticket) {
-          hideForm();
-          createTicket(e, text);
-          return;
-        }
 
         conversation.push(["human", text]);
         console.log(conversation);
         document.getElementById("response").innerText += "\n\nUser: " + text;
 
-        fetch("http://127.0.0.1:5000/ask", {
+        fetch("http://127.0.0.1:5000/init_ai_workflow", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ conversation }),
+          body: JSON.stringify({ conversation, query_prompt, ticket }),
         })
           .then((response) => response.json())
           .then((data) => {
+            console.log(data);
+            data = data[0];
             conversation.push(["ai", data.response.llm_output]);
-            queryPrompt = data.response.queryPrompt;
+            query_prompt = data.response.query_prompt;
             console.log(conversation);
-            console.log("QueryPrompt: ", queryPrompt);
-            document.getElementById("response").innerText +=
-              "\n\nAI: " + data.response.llm_output;
-            if (data.response.ticket == true) {
+            console.log("query_prompt: ", query_prompt);
+            if (data.response.ticket && !ticket) {
               toggleForm();
+            }
+            if (data.response.ticket_content !== "") {
+              document.getElementById("response").innerText +=
+                "\n\nTicket: " + data.response.ticket_content;
+            } else {
+              document.getElementById("response").innerText +=
+                "\n\nAI: " + data.response.llm_output;
             }
           })
           .catch((error) => console.error("Error:", error));
@@ -75,29 +77,9 @@
 
       function createTicket(e, text) {
         e.preventDefault();
-
+        hideForm();
         ticket = true;
-        conversation.push(["human", text]);
-
-        console.log(conversation);
-
-        fetch("http://127.0.0.1:5000/create_ticket", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ conversation, queryPrompt }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            conversation.push(["ai", data.response.llm_output]);
-            console.log(conversation);
-            document.getElementById("response").innerText +=
-              typeof data.response.llm_output === "string"
-                ? "AI: " + data.response.llm_output
-                : "Ticket: " + data.response.llm_output.ticket_content;
-          })
-          .catch((error) => console.error("Error:", error));
+        submit(e, text);
       }
 
       document
