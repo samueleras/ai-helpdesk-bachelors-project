@@ -1,5 +1,5 @@
 {
-  "queryPromptwithContext": {
+  "query_prompt_with_context": {
     "default_prompt": "Create a concise search query based on the conversation below, focusing on the most recent input. Do not add explanations or extra text.",
     "followup_prompt": "Return only the search query"
   },

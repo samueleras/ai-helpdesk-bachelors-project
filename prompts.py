@@ -12,18 +12,18 @@ app_path = os.path.dirname(os.path.abspath(__file__))
 prompts = load_prompts(os.path.join(app_path, "prompts.json"))
 
 
-def queryPromptwithContext():
+def query_prompt_with_context():
     return ChatPromptTemplate(
         [
             (
                 "system",
-                prompts["queryPromptwithContext"]["default_prompt"],
+                prompts["query_prompt_with_context"]["default_prompt"],
             ),
             MessagesPlaceholder("chat_history"),
             MessagesPlaceholder("input"),
             (
                 "system",
-                prompts["queryPromptwithContext"]["followup_prompt"],
+                prompts["query_prompt_with_context"]["followup_prompt"],
             ),
         ]
     )
