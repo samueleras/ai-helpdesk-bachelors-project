@@ -36,7 +36,7 @@ def grading_prompt():
                 "system",
                 prompts["grading_prompt"]["default_prompt"],
             ),
-            MessagesPlaceholder("documents"),
+            MessagesPlaceholder("document"),
             MessagesPlaceholder("chat_history"),
             MessagesPlaceholder("input"),
             (
@@ -69,7 +69,6 @@ def details_provided_prompt():
                 "system",
                 prompts["details_provided_prompt"]["default_prompt"],
             ),
-            MessagesPlaceholder("documents"),
             MessagesPlaceholder("chat_history"),
             MessagesPlaceholder("input"),
             ("system", prompts["details_provided_prompt"]["followup_prompt"]),
