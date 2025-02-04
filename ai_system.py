@@ -6,6 +6,7 @@ from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 import uuid
+import re
 from custom_types import AppConfig, GraphState, WorkflowRequest, WorkflowResponse
 from prompts import (
     query_prompt_with_context,
@@ -28,7 +29,7 @@ class LangChainModel:
 # Initialize the LangChain model (this part can be copied from your notebook)
 def initialize_langchain(config: AppConfig):
 
-    llm = ChatOllama(model=config["ollama"]["llm"])
+    llm = ChatOllama(model=config["ollama"]["llm"], temperature=0)
 
     history_aware_query_chain = query_prompt_with_context() | llm
 
@@ -50,16 +51,31 @@ def initialize_langchain(config: AppConfig):
 
     ticket_summary_chain = ticket_summary_prompt() | llm
 
+    def remove_think_tags(response: str) -> str:
+        # Regular expression to match <think>...</think> and remove them
+        cleaned_response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL)
+        return cleaned_response.strip()
+
     def retrieve(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
         query_prompt = state["query_prompt"]
-        ticket = state["ticket"]
-        if not ticket:
+        if query_prompt == "":
             query_prompt = history_aware_query_chain.invoke(
                 {"input": input, "chat_history": chat_history}
             ).content
-        documents = retrieve_documents(query_prompt)
+        query_prompt = remove_think_tags(query_prompt)
+        print(query_prompt)
+        retrieved_data = retrieve_documents(query_prompt)
+        documents = []
+        if retrieved_data:
+            documents = [
+                {
+                    "role": "system",
+                    "content": f"Reference document (Source: {doc['entity']['metadata']['source']}): {doc['entity']['text']}",
+                }
+                for doc in retrieved_data["documents"]
+            ]
         return {"documents": documents, "query_prompt": query_prompt}
 
     def grade_documents(state: GraphState):
@@ -72,7 +88,7 @@ def initialize_langchain(config: AppConfig):
             score = retrieval_grader_chain.invoke(
                 {
                     "input": input,
-                    "documents": [SystemMessage(content=doc["entity"]["text"])],
+                    "document": doc,
                     "chat_history": chat_history,
                 }
             ).content[0]
@@ -103,12 +119,20 @@ def initialize_langchain(config: AppConfig):
     def perform_web_search(state: GraphState):
         query_prompt = state.get("query_prompt")
         documents = state.get("documents", [])
-        web_results = web_search_tool.invoke({"query": query_prompt})
-        documents.extend(
-            {"entity": {"text": d["content"], "metadata": {"url": d["url"]}}}
-            for d in web_results
-        )
-        return {"documents": documents}
+        try:
+            web_results = web_search_tool.invoke({"query": query_prompt})
+            documents.extend(
+                {
+                    "role": "system",
+                    "content": f"Reference document (Source: {d["url"]}): {d["content"]}",
+                }
+                for d in web_results
+            )
+            print(documents)
+            return {"documents": documents}
+        except Exception as e:
+            print(f"Error in perform_web_search: {e}")
+            raise
 
     def check_web_search_cause(state: GraphState):
         ticket = state["ticket"]
@@ -123,32 +147,26 @@ def initialize_langchain(config: AppConfig):
         input = state["input"]
         chat_history = state["chat_history"]
         documents = state["documents"]
-        documentsAsSystemMessage = [
-            SystemMessage(content=doc["entity"]["text"]) for doc in documents
-        ]
         solvable = solvability_chain.invoke(
             {
-                "documents": documentsAsSystemMessage,
+                "documents": documents,
                 "input": input,
                 "chat_history": chat_history,
-            }
+            },
         ).content
+        solvable = remove_think_tags(solvable)
         return {"solvable": solvable}
 
     def check_details_provided(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
-        documents = state["documents"]
-        documentsAsSystemMessage = [
-            SystemMessage(content=doc["entity"]["text"]) for doc in documents
-        ]
         details_provided = details_provided_chain.invoke(
             {
-                "documents": documentsAsSystemMessage,
                 "input": input,
                 "chat_history": chat_history,
-            }
+            },
         ).content
+        details_provided = remove_think_tags(details_provided)
         return {"details_provided": details_provided}
 
     def decide_ask_further_questions_or_generate_ticket(state: GraphState):
@@ -174,16 +192,14 @@ def initialize_langchain(config: AppConfig):
         input = state["input"]
         documents = state["documents"]
         chat_history = state["chat_history"]
-        documentsAsSystemMessage = [
-            SystemMessage(content=doc["entity"]["text"]) for doc in documents
-        ]
         generation = troubleshooting_chain.invoke(
             {
-                "documents": documentsAsSystemMessage,
+                "documents": documents,
                 "input": input,
                 "chat_history": chat_history,
             }
         ).content
+        generation = remove_think_tags(generation)
         return {"generation": generation}
 
     def offer_ticket(state: GraphState):
@@ -199,41 +215,39 @@ def initialize_langchain(config: AppConfig):
         input = state["input"]
         chat_history = state["chat_history"]
         documents = state["documents"]
-        documentsAsSystemMessage = [
-            SystemMessage(content=doc["entity"]["text"]) for doc in documents
-        ]
         generation = ask_further_questions_chain.invoke(
             {
-                "documents": documentsAsSystemMessage,
+                "documents": documents,
                 "input": input,
                 "chat_history": chat_history,
             }
         ).content
+        generation = remove_think_tags(generation)
         return {"generation": generation}
 
     def generate_ticket(state: GraphState):
         try:
             chat_history = state["chat_history"]
             documents = state["documents"]
-            documents_as_system_message = [
-                SystemMessage(content=doc["entity"]["text"]) for doc in documents
-            ]
             print("generate_issue_description")
             issue_description = ticket_issue_description_chain.invoke(
                 {"chat_history": chat_history}
             ).content
+            issue_description = remove_think_tags(issue_description)
             print("generate_proposed_solutions")
             proposed_solutions = ticket_propose_solutions_chain.invoke(
                 {
                     "issue_description": [SystemMessage(issue_description)],
-                    "documents": documents_as_system_message,
+                    "documents": documents,
                 }
             ).content
+            proposed_solutions = remove_think_tags(proposed_solutions)
             generated_ticket = issue_description + "\n" + proposed_solutions
             print("generate_ticket_summary")
             ticket_summary = ticket_summary_chain.invoke(
                 {"ticket": [SystemMessage(content=issue_description)]}
             ).content
+            ticket_summary = remove_think_tags(ticket_summary)
             return {
                 "ticket_content": generated_ticket,
                 "ticket_summary": ticket_summary,
