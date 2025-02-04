@@ -58,8 +58,8 @@ def _create_user_and_schema():
 
         index_params.add_index(
             field_name="embedding",
-            index_type="AUTOINDEX",
-            metric_type=config["milvus"]["metric_type"],
+            index_type=config["milvus"]["index_type_rag"],
+            metric_type=config["milvus"]["metric_type_rag"],
         )
 
         try:
@@ -88,8 +88,8 @@ def _create_user_and_schema():
 
         index_params.add_index(
             field_name="embedding",
-            index_type="AUTOINDEX",
-            metric_type="COSINE",
+            index_type=config["milvus"]["index_type_tickets"],
+            metric_type=config["milvus"]["metric_type_tickets"],
         )
 
         try:
@@ -237,6 +237,8 @@ def initialize_milvus(config_file):
     embedding_model = OllamaEmbeddings(model=config["ollama"]["embedding_model"])
     milvus_client = None
     attempts = 0
+
+    print("Initiating Milvus DB connection...")
 
     while not milvus_client and attempts < 3:
         try:

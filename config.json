@@ -6,7 +6,10 @@
   "milvus": {
     "host": "http://localhost:19530",
     "user": "aihelpdesk",
-    "metric_type": "COSINE",
+    "metric_type_rag": "COSINE",
+    "index_type_rag": "AUTOINDEX",
+    "metric_type_tickets": "COSINE",
+    "index_type_tickets": "AUTOINDEX",
     "number_of_retrieved_documents": 3,
     "rag_documents_folder_absolute_path": "E:\\SynologyDrive\\Dateien\\VSCodeProjects\\Dissertation\\ai-helpdesk-bachelors-project\\rag_documents"
   }
