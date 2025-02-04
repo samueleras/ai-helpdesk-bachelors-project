@@ -3,11 +3,12 @@ from flask_cors import CORS
 import json
 import os
 from vectordb import initialize_milvus
-from ai_system import WorkflowResponse, initialize_langchain
+from ai_system import initialize_langchain
+from custom_types import WorkflowResponse
 from dotenv import load_dotenv
 import json
-from pydantic import BaseModel, ValidationError
-from typing import List, Tuple
+from pydantic import ValidationError
+from pydantic_models import WorkflowRequestModel
 
 load_dotenv()
 
@@ -27,18 +28,12 @@ app = Flask(__name__)
 CORS(app)
 
 
-class WorkflowRequest(BaseModel):
-    conversation: List[Tuple[str, str]]
-    query_prompt: str = ""
-    ticket: bool
-
-
 # Define an endpoint that accepts POST requests and sends the request to the LangChain model
 @app.route("/init_ai_workflow", methods=["POST"])
 def init_ai_workflow():
     try:
         data = request.get_json()
-        validated_data = WorkflowRequest(
+        validated_data = WorkflowRequestModel(
             conversation=data["conversation"],
             query_prompt=data.get("query_prompt", ""),
             ticket=data["ticket"],
@@ -54,7 +49,7 @@ def init_ai_workflow():
 
     # Use the LangChain model to generate a response or a ticket, depending on the ticket variable
     try:
-        response: WorkflowResponse = langchain_model.initiate_workflow(
+        response: WorkflowRequestModel = langchain_model.initiate_workflow(
             conversation, query_prompt, ticket
         )
     except RuntimeError as e:
