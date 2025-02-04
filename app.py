@@ -4,7 +4,7 @@ import json
 import os
 from vectordb import initialize_milvus
 from ai_system import initialize_langchain
-from custom_types import WorkflowResponse
+from custom_types import WorkflowResponse, AppConfig
 from dotenv import load_dotenv
 import json
 from pydantic import ValidationError
@@ -13,13 +13,13 @@ from pydantic_models import WorkflowRequestModel
 load_dotenv()
 
 
-def load_config(config_file):
+def load_config(config_file: AppConfig):
     with open(config_file, "r") as f:
         return json.load(f)
 
 
 app_path = os.path.dirname(os.path.abspath(__file__))
-config = load_config(os.path.join(app_path, "config.json"))
+config: AppConfig = load_config(os.path.join(app_path, "config.json"))
 initialize_milvus(config)
 langchain_model = initialize_langchain(config)
 

@@ -6,7 +6,7 @@ from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 import uuid
-from custom_types import GraphState, WorkflowRequest, WorkflowResponse
+from custom_types import AppConfig, GraphState, WorkflowRequest, WorkflowResponse
 from prompts import (
     query_prompt_with_context,
     grading_prompt,
@@ -26,7 +26,7 @@ class LangChainModel:
 
 
 # Initialize the LangChain model (this part can be copied from your notebook)
-def initialize_langchain(config):
+def initialize_langchain(config: AppConfig):
 
     llm = ChatOllama(model=config["ollama"]["llm"])
 
