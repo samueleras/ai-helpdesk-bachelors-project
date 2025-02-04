@@ -241,8 +241,8 @@ def _watch_directory(milvus_client: MilvusClient, directory: str) -> None:
 
 def initialize_milvus(config_file: AppConfig):
     global milvus_client, config, embedding_model, observer_started
-    config: AppConfig = config_file
-    embedding_model = OllamaEmbeddings(model=config[["ollama"]["embedding_model"]])
+    config = config_file
+    embedding_model = OllamaEmbeddings(model=config["ollama"]["embedding_model"])
     milvus_client = None
     attempts = 0
 
@@ -295,7 +295,7 @@ def retrieve_documents(query: str) -> List[dict]:
         anns_field="embedding",
         data=[query_vector],
         limit=config["milvus"]["number_of_retrieved_documents"],
-        search_params={"metric_type": config["milvus"]["metric_type"]},
+        search_params={"metric_type": config["milvus"]["metric_type_rag"]},
         output_fields=["text", "metadata"],
     )[0]
 
