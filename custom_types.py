@@ -1,4 +1,26 @@
-from typing import TypedDict, List, Tuple
+from datetime import datetime
+from typing import Optional, TypedDict, List, Tuple
+
+
+class OllamaConfig(TypedDict):
+    llm: str
+    embedding_model: str
+
+
+class MilvusConfig(TypedDict):
+    host: str
+    user: str
+    metric_type_rag: str
+    index_type_rag: str
+    metric_type_tickets: str
+    index_type_tickets: str
+    number_of_retrieved_documents: int
+    rag_documents_folder_absolute_path: str
+
+
+class AppConfig(TypedDict):
+    ollama: OllamaConfig
+    milvus: MilvusConfig
 
 
 class WorkflowRequest(TypedDict):
@@ -27,3 +49,22 @@ class GraphState(TypedDict):
     ticket: bool
     ticket_content: str = ""
     ticket_summary: str = ""
+
+
+class Ticket(TypedDict):
+    ticket_id: int
+    title: str
+    content: str
+    summary: Optional[str]
+    creation_date: datetime
+    closed_date: Optional[datetime]
+    user_id: str
+    assignee_id: Optional[str]
+
+
+class TicketConversation(TypedDict):
+    message_id: int
+    ticket_id: int
+    author_id: str
+    message: str
+    created_at: datetime
