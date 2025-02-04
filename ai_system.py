@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from typing import Callable, List, Tuple
 from vectordb import retrieve_documents
 from langchain_ollama import ChatOllama
 from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 import uuid
-from typing import Callable, Tuple, TypedDict, List
+from custom_types import GraphState, WorkflowRequest, WorkflowResponse
 from prompts import (
     query_prompt_with_context,
     grading_prompt,
@@ -19,23 +20,9 @@ from prompts import (
 )
 
 
-class WorkflowRequestTyped(TypedDict):
-    conversation: List[Tuple[str, str]]
-    query_prompt: str
-    ticket: bool
-
-
-class WorkflowResponse(TypedDict):
-    llm_output: str
-    ticket_content: str
-    ticket_summary: str
-    query_prompt: str
-    ticket: bool
-
-
 @dataclass
 class LangChainModel:
-    initiate_workflow: Callable[[WorkflowRequestTyped], WorkflowResponse]
+    initiate_workflow: Callable[[WorkflowRequest], WorkflowResponse]
 
 
 # Initialize the LangChain model (this part can be copied from your notebook)
@@ -63,21 +50,7 @@ def initialize_langchain(config):
 
     ticket_summary_chain = ticket_summary_prompt() | llm
 
-    class GraphState(TypedDict):
-
-        input: str
-        chat_history: str
-        query_prompt: str = ""
-        generation: str = ""
-        web_search: bool
-        solvable: str
-        details_provided: str
-        documents: List[dict]
-        ticket: bool
-        ticket_content: str = ""
-        ticket_summary: str = ""
-
-    def retrieve(state):
+    def retrieve(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
         query_prompt = state["query_prompt"]
@@ -89,7 +62,7 @@ def initialize_langchain(config):
         documents = retrieve_documents(query_prompt)
         return {"documents": documents, "query_prompt": query_prompt}
 
-    def grade_documents(state):
+    def grade_documents(state: GraphState):
         input = state["input"]
         documents = state["documents"]
         chat_history = state["chat_history"]
@@ -114,7 +87,7 @@ def initialize_langchain(config):
             "web_search": web_search,
         }
 
-    def decide_web_search(state):
+    def decide_web_search(state: GraphState):
         web_search = state["web_search"]
         ticket = state["ticket"]
         if web_search:
@@ -127,7 +100,7 @@ def initialize_langchain(config):
             print("check_solvability")
             return "check_solvability"
 
-    def perform_web_search(state):
+    def perform_web_search(state: GraphState):
         query_prompt = state.get("query_prompt")
         documents = state.get("documents", [])
         web_results = web_search_tool.invoke({"query": query_prompt})
@@ -137,7 +110,7 @@ def initialize_langchain(config):
         )
         return {"documents": documents}
 
-    def check_web_search_cause(state):
+    def check_web_search_cause(state: GraphState):
         ticket = state["ticket"]
         if ticket:
             print("check_details_provided")
@@ -146,7 +119,7 @@ def initialize_langchain(config):
             print("check_solvability")
             return "check_solvability"
 
-    def check_solvability(state):
+    def check_solvability(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
         documents = state["documents"]
@@ -162,7 +135,7 @@ def initialize_langchain(config):
         ).content
         return {"solvable": solvable}
 
-    def check_details_provided(state):
+    def check_details_provided(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
         documents = state["documents"]
@@ -178,7 +151,7 @@ def initialize_langchain(config):
         ).content
         return {"details_provided": details_provided}
 
-    def decide_ask_further_questions_or_generate_ticket(state):
+    def decide_ask_further_questions_or_generate_ticket(state: GraphState):
         details_provided = state["details_provided"]
         if details_provided[0] == "1":
             print("generate_ticket")
@@ -187,7 +160,7 @@ def initialize_langchain(config):
             print("further_questions")
             return "further_questions"
 
-    def decide_generate_solution_or_offer_ticket(state):
+    def decide_generate_solution_or_offer_ticket(state: GraphState):
         solvable = state["solvable"]
         print(solvable[0])
         if solvable[0] == "1":
@@ -197,7 +170,7 @@ def initialize_langchain(config):
             print("offer_ticket")
             return "offer_ticket"
 
-    def generate_solution(state):
+    def generate_solution(state: GraphState):
         input = state["input"]
         documents = state["documents"]
         chat_history = state["chat_history"]
@@ -213,7 +186,7 @@ def initialize_langchain(config):
         ).content
         return {"generation": generation}
 
-    def offer_ticket(state):
+    def offer_ticket(state: GraphState):
         text = """
             It seems the issue is more complex than what can be resolved through standard troubleshooting.
             To address this, I recommend escalating it to our specialized technical support team, who have the tools and expertise to handle more advanced problems.
@@ -222,7 +195,7 @@ def initialize_langchain(config):
                     Before submitting the ticket, I may need to ask you a few additional questions to gather all necessary information for our support team."""
         return {"generation": text, "ticket": True}
 
-    def further_questions(state):
+    def further_questions(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
         documents = state["documents"]
@@ -238,7 +211,7 @@ def initialize_langchain(config):
         ).content
         return {"generation": generation}
 
-    def generate_ticket(state):
+    def generate_ticket(state: GraphState):
         try:
             chat_history = state["chat_history"]
             documents = state["documents"]
