@@ -1,19 +1,23 @@
+from typing import Callable, List, Tuple
 from langchain_ollama import OllamaEmbeddings
 from pymilvus import MilvusClient, DataType
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import os
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from PyPDF2 import PdfReader
 from pathlib import Path
 import threading
+from custom_types import AppConfig, Ticket
 
 observer_started = False
 
 
 def _create_user_and_schema():
     try:
-        milvus_client = MilvusClient(uri=config["milvus"]["host"], token="root:Milvus")
+        milvus_client: MilvusClient = MilvusClient(
+            uri=config["milvus"]["host"], token="root:Milvus"
+        )
     except:
         print(
             "Error: Cannot access root. Root password has to remain default for initial start up."
@@ -102,7 +106,7 @@ def _create_user_and_schema():
             print("Collection already exists")
 
 
-def _initialize_directory(milvus_client, directory):
+def _initialize_directory(milvus_client: MilvusClient, directory: str):
     res = milvus_client.query(
         collection_name="collection_rag",
         limit=1,
@@ -148,27 +152,31 @@ def _initialize_directory(milvus_client, directory):
 
 
 class DirectoryWatcher(FileSystemEventHandler):
-    def __init__(self, milvus_client):
+    def __init__(self, milvus_client: MilvusClient):
         self.milvus_client = milvus_client
-        self.last_event = ()  # Tracks the last event type for each file path
+        self.last_event: Tuple[
+            str, str
+        ] = ()  # Tracks the last event type for each file path
 
-    def on_created(self, event):
+    def on_created(self, event: FileSystemEvent) -> None:
         if not event.is_directory:
             self.process_unique_event(
                 event.src_path, "created/modified", self.process_file
             )
 
-    def on_modified(self, event):
+    def on_modified(self, event: FileSystemEvent) -> None:
         if not event.is_directory:
             self.process_unique_event(
                 event.src_path, "created/modified", self.process_file
             )
 
-    def on_deleted(self, event):
+    def on_deleted(self, event: FileSystemEvent) -> None:
         if not event.is_directory:
             self.process_unique_event(event.src_path, "deleted", self.delete_vectors)
 
-    def process_unique_event(self, file_path, event_type, callback):
+    def process_unique_event(
+        self, file_path: str, event_type: str, callback: Callable[[str], None]
+    ) -> None:
         # Process each event just ones, as windows sometimes logs them multiple time
         event = (file_path, event_type)
         # Abort if this file was processed already
@@ -177,7 +185,7 @@ class DirectoryWatcher(FileSystemEventHandler):
         self.last_event = event
         callback(file_path)
 
-    def process_file(self, file_path):
+    def process_file(self, file_path: str) -> None:
         print(f"Processing file: {file_path}")
         os.system(f'attrib -h "{file_path}"')
         file_name = os.path.basename(file_path)
@@ -207,7 +215,7 @@ class DirectoryWatcher(FileSystemEventHandler):
         res = milvus_client.insert(collection_name="collection_rag", data=data)
         print(res)
 
-    def delete_vectors(self, file_path):
+    def delete_vectors(self, file_path: str) -> None:
         print(f"Deleting vectors for file: {file_path}")
         file_name = os.path.basename(file_path)
         res = milvus_client.delete(
@@ -217,8 +225,8 @@ class DirectoryWatcher(FileSystemEventHandler):
         print(res)
 
 
-def _watch_directory(milvus_client, directory):
-    event_handler = DirectoryWatcher(milvus_client)
+def _watch_directory(milvus_client: MilvusClient, directory: str) -> None:
+    event_handler: DirectoryWatcher = DirectoryWatcher(milvus_client)
     observer = Observer()
     observer.schedule(event_handler, directory, recursive=False)
     print(f"Watching directory: {directory}")
@@ -231,10 +239,10 @@ def _watch_directory(milvus_client, directory):
         observer.join()
 
 
-def initialize_milvus(config_file):
+def initialize_milvus(config_file: AppConfig):
     global milvus_client, config, embedding_model, observer_started
-    config = config_file
-    embedding_model = OllamaEmbeddings(model=config["ollama"]["embedding_model"])
+    config: AppConfig = config_file
+    embedding_model = OllamaEmbeddings(model=config[["ollama"]["embedding_model"]])
     milvus_client = None
     attempts = 0
 
@@ -280,7 +288,7 @@ def initialize_milvus(config_file):
     watcher_thread.start()
 
 
-def retrieve_documents(query):
+def retrieve_documents(query: str) -> List[dict]:
     query_vector = embedding_model.embed_query(query)
     return milvus_client.search(
         collection_name="collection_rag",
@@ -292,7 +300,7 @@ def retrieve_documents(query):
     )[0]
 
 
-def store_ticket(ticket):
+def store_ticket(ticket: Ticket) -> None:
 
     embedding = embedding_model.embed_documents(ticket["summary"])
 
@@ -301,7 +309,7 @@ def store_ticket(ticket):
     milvus_client.insert(collection_name="collection_ticket", data=data)
 
 
-def retrieve_similar_tickets(ticket):
+def retrieve_similar_tickets(ticket: Ticket) -> List[dict]:
     query_vector = embedding_model.embed_query(ticket["summary"])
     return milvus_client.search(
         collection_name="collection_ticket",
