@@ -1,15 +1,9 @@
-import json
 import os
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-
-
-def load_prompts(file_path: str):
-    with open(file_path, "r") as file:
-        return json.load(file)
-
+from utils import load_json
 
 app_path = os.path.dirname(os.path.abspath(__file__))
-prompts = load_prompts(os.path.join(app_path, "prompts.json"))
+prompts = load_json(os.path.join(app_path, "prompts.json"))
 
 
 def query_prompt_with_context():
