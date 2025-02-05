@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import os
 from typing import Callable, List, Tuple
 from vectordb import retrieve_documents
 from langchain_ollama import ChatOllama
@@ -7,6 +8,7 @@ from langchain_core.messages.system import SystemMessage
 from langchain_community.tools.tavily_search import TavilySearchResults
 import uuid
 import re
+from utils import load_json
 from custom_types import AppConfig, GraphState, WorkflowRequest, WorkflowResponse
 from prompts import (
     query_prompt_with_context,
@@ -39,8 +41,6 @@ def initialize_langchain(config: AppConfig):
 
     solvability_chain = solvability_prompt() | llm
 
-    details_provided_chain = details_provided_prompt() | llm
-
     troubleshooting_chain = troubleshooting_prompt() | llm
 
     ask_further_questions_chain = further_questions_prompt() | llm
@@ -50,6 +50,9 @@ def initialize_langchain(config: AppConfig):
     ticket_propose_solutions_chain = ticket_propose_solutions_prompt() | llm
 
     ticket_summary_chain = ticket_summary_prompt() | llm
+
+    app_path = os.path.dirname(os.path.abspath(__file__))
+    messages = load_json(os.path.join(app_path, "messages.json"))
 
     def remove_think_tags(response: str) -> str:
         # Regular expression to match <think>...</think> and remove them
@@ -203,13 +206,10 @@ def initialize_langchain(config: AppConfig):
         return {"generation": generation}
 
     def offer_ticket(state: GraphState):
-        text = """
-            It seems the issue is more complex than what can be resolved through standard troubleshooting.
-            To address this, I recommend escalating it to our specialized technical support team, who have the tools and expertise to handle more advanced problems.
-            \nWe can generate a support ticket to document all details, including the troubleshooting steps we've already taken, and forward it to the appropriate team for further investigation.
-            \nIf you'd like me to create a ticket on your behalf, please click the "Create Ticket" button below.
-                    Before submitting the ticket, I may need to ask you a few additional questions to gather all necessary information for our support team."""
-        return {"generation": text, "ticket": True}
+        return {
+            "generation": messages["ticket_generation_message"],
+            "ticket": True,
+        }
 
     def ask_further_questions(state: GraphState):
         input = state["input"]
