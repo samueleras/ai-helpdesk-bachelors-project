@@ -267,13 +267,13 @@ def initialize_milvus(config_file: AppConfig):
     if not milvus_client:
         raise ConnectionError("Connecting to Milvus failed.")
     # Clear whole vector db
-    try:
+    """ try:
         result = milvus_client.delete(
             collection_name="collection_rag", filter="id >= 0"
         )
         print(f"Deletion result: {result}")
     except Exception as e:
-        print(f"Error during deletion: {e}")
+        print(f"Error during deletion: {e}") """
     _initialize_directory(
         milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
     )

@@ -14,7 +14,7 @@ from prompts import (
     query_prompt_with_context,
     grading_prompt,
     solvability_prompt,
-    further_questions_prompt,
+    ask_for_ticket_details_prompt,
     troubleshooting_prompt,
     ticket_issue_description_prompt,
     ticket_propose_solutions_prompt,
@@ -42,7 +42,7 @@ def initialize_langchain(config: AppConfig):
 
     troubleshooting_chain = troubleshooting_prompt() | llm
 
-    ask_further_questions_chain = further_questions_prompt() | llm
+    ask_for_ticket_details_chain = ask_for_ticket_details_prompt() | llm
 
     ticket_issue_description_chain = ticket_issue_description_prompt() | llm
 
@@ -60,13 +60,14 @@ def initialize_langchain(config: AppConfig):
 
     def retrieve_or_generate_query_prompt(state: GraphState):
         print("retrieve_or_generate_query_prompt")
+        ticket = state["ticket"]
         query_prompt = state["query_prompt"]
-        if query_prompt == "":
-            print("generate_query_prompt")
-            return "generate_query_prompt"
-        else:
+        if ticket and query_prompt != "":
             print("retrieve_documents")
             return "retrieve_documents"
+        else:
+            print("generate_query_prompt")
+            return "generate_query_prompt"
 
     def generate_query_prompt(state: GraphState):
         input = state["input"]
@@ -108,7 +109,7 @@ def initialize_langchain(config: AppConfig):
                     "chat_history": chat_history,
                 }
             ).content[0]
-            print(score)
+            print("Document Grade: ", score)
             if score == "1":
                 print("Doc appended")
                 filtered_docs.append(doc)
@@ -145,14 +146,13 @@ def initialize_langchain(config: AppConfig):
                 }
                 for d in web_results
             )
-            print(documents)
             return {"documents": documents}
         except Exception as e:
             print(f"Error in perform_web_search: {e}")
             raise
 
-    def check_web_search_cause(state: GraphState):
-        print("check_web_search_cause")
+    def decide_ticket_or_troubelshooting_path(state: GraphState):
+        print("decide_ticket_or_troubelshooting_path")
         ticket = state["ticket"]
         if ticket:
             print("check_further_questions_or_generation_pathway")
@@ -179,7 +179,17 @@ def initialize_langchain(config: AppConfig):
         solvable = remove_think_tags(solvable)
         return {"solvable": solvable}
 
-    def check_further_questions_or_generation_pathway(state: GraphState):
+    def decide_issue_troubleshootable(state: GraphState):
+        print("decide_issue_troubleshootable")
+        solvable = state["solvable"]
+        if solvable[0] == "1":
+            print("generate_troubleshooting_guide")
+            return "generate_troubleshooting_guide"
+        else:
+            print("offer_ticket")
+            return "offer_ticket"
+
+    def check_ticket_details_provided(state: GraphState):
         excecution_count = state["excecution_count"]
         if excecution_count == 0:
             further_questions = True
@@ -187,8 +197,8 @@ def initialize_langchain(config: AppConfig):
             further_questions = False
         return {"further_questions": further_questions}
 
-    def decide_ask_further_questions_or_generate_ticket(state: GraphState):
-        print("decide_ask_further_questions_or_generate_ticket")
+    def decide_ticket_details_provided(state: GraphState):
+        print("decide_ticket_details_provided")
         further_questions = state["further_questions"]
         if further_questions:
             print("ask_further_questions")
@@ -197,18 +207,7 @@ def initialize_langchain(config: AppConfig):
             print("generate_ticket")
             return "generate_ticket"
 
-    def decide_generate_solution_or_offer_ticket(state: GraphState):
-        print("decide_generate_solution_or_offer_ticket")
-        solvable = state["solvable"]
-        print(solvable[0])
-        if solvable[0] == "1":
-            print("generate_solution")
-            return "generate_solution"
-        else:
-            print("offer_ticket")
-            return "offer_ticket"
-
-    def generate_solution(state: GraphState):
+    def generate_troubleshooting_guide(state: GraphState):
         input = state["input"]
         documents = state["documents"]
         chat_history = state["chat_history"]
@@ -228,11 +227,11 @@ def initialize_langchain(config: AppConfig):
             "ticket": True,
         }
 
-    def ask_further_questions(state: GraphState):
+    def ask_for_ticket_details(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
         documents = state["documents"]
-        generation = ask_further_questions_chain.invoke(
+        generation = ask_for_ticket_details_chain.invoke(
             {
                 "documents": documents,
                 "input": input,
@@ -294,17 +293,17 @@ def initialize_langchain(config: AppConfig):
         "check_solvability", check_solvability
     )  # Check whether the issue can actually be solved by the user without administrative privileges
     workflow.add_node(
-        "check_further_questions_or_generation_pathway",
-        check_further_questions_or_generation_pathway,
+        "check_ticket_details_provided",
+        check_ticket_details_provided,
     )  # check if questions were already asked
     workflow.add_node(
-        "generate_solution", generate_solution
+        "generate_troubleshooting_guide", generate_troubleshooting_guide
     )  # generate a proposed solution for the offer
     workflow.add_node(
         "offer_ticket", offer_ticket
     )  # Offer to create a ticket on behalf of the user
     workflow.add_node(
-        "ask_further_questions", ask_further_questions
+        "ask_for_ticket_details", ask_for_ticket_details
     )  # ask further questions to get all details from user
     workflow.add_node("generate_ticket", generate_ticket)  # create ticket
 
@@ -325,36 +324,36 @@ def initialize_langchain(config: AppConfig):
         {
             "perform_web_search": "perform_web_search",
             "check_solvability": "check_solvability",
-            "check_further_questions_or_generation_pathway": "check_further_questions_or_generation_pathway",
+            "check_ticket_details_provided": "check_ticket_details_provided",
         },
     )
     workflow.add_conditional_edges(
         "perform_web_search",
-        check_web_search_cause,
+        decide_ticket_or_troubelshooting_path,
         {
             "check_solvability": "check_solvability",
-            "check_further_questions_or_generation_pathway": "check_further_questions_or_generation_pathway",
+            "check_ticket_details_provided": "check_ticket_details_provided",
         },
     )
     workflow.add_conditional_edges(
         "check_solvability",
-        decide_generate_solution_or_offer_ticket,
+        decide_issue_troubleshootable,
         {
-            "generate_solution": "generate_solution",
+            "generate_troubleshooting_guide": "generate_troubleshooting_guide",
             "offer_ticket": "offer_ticket",
         },
     )
     workflow.add_conditional_edges(
-        "check_further_questions_or_generation_pathway",
-        decide_ask_further_questions_or_generate_ticket,
+        "check_ticket_details_provided",
+        decide_ticket_details_provided,
         {
-            "ask_further_questions": "ask_further_questions",
+            "ask_for_ticket_details": "ask_for_ticket_details",
             "generate_ticket": "generate_ticket",
         },
     )
     workflow.add_edge("offer_ticket", END)
-    workflow.add_edge("generate_solution", END)
-    workflow.add_edge("ask_further_questions", END)
+    workflow.add_edge("generate_troubleshooting_guide", END)
+    workflow.add_edge("ask_for_ticket_details", END)
     workflow.add_edge("generate_ticket", END)
 
     custom_graph = workflow.compile()

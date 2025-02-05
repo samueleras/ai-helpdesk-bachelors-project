@@ -88,7 +88,7 @@ def troubleshooting_prompt():
     )
 
 
-def further_questions_prompt():
+def ask_for_ticket_details_prompt():
     return ChatPromptTemplate.from_messages(
         [
             (
