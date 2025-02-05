@@ -27,6 +27,7 @@
       let conversation = [];
       let query_prompt = "";
       let ticket = false;
+      let excecution_count = 0;
       function toggleForm() {
         let form = document.getElementById("ticketForm");
         form.style.display =
@@ -51,10 +52,16 @@
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ conversation, query_prompt, ticket }),
+          body: JSON.stringify({
+            conversation,
+            query_prompt,
+            ticket,
+            excecution_count,
+          }),
         })
           .then((response) => response.json())
           .then((data) => {
+            excecution_count++;
             console.log(data);
             data = data[0];
             conversation.push(["ai", data.response.llm_output]);
@@ -65,6 +72,8 @@
               toggleForm();
             }
             if (data.response.ticket_content !== "") {
+              console.log("Ticket");
+              console.log(data);
               document.getElementById("response").innerText +=
                 "\n\nTicket: " + data.response.ticket_content;
             } else {
@@ -77,6 +86,7 @@
 
       function createTicket(e, text) {
         e.preventDefault();
+        excecution_count = 0;
         hideForm();
         ticket = true;
         submit(e, text);
