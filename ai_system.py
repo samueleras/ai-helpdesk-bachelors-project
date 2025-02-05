@@ -128,8 +128,8 @@ def initialize_langchain(config: AppConfig):
             print("perform_web_search")
             return "perform_web_search"
         elif ticket:
-            print("check_further_questions_or_generation_pathway")
-            return "check_further_questions_or_generation_pathway"
+            print("check_ticket_details_provided")
+            return "check_ticket_details_provided"
         else:
             print("check_solvability")
             return "check_solvability"
@@ -155,8 +155,8 @@ def initialize_langchain(config: AppConfig):
         print("decide_ticket_or_troubelshooting_path")
         ticket = state["ticket"]
         if ticket:
-            print("check_further_questions_or_generation_pathway")
-            return "check_further_questions_or_generation_pathway"
+            print("check_ticket_details_provided")
+            return "check_ticket_details_provided"
         else:
             print("check_solvability")
             return "check_solvability"
@@ -192,17 +192,17 @@ def initialize_langchain(config: AppConfig):
     def check_ticket_details_provided(state: GraphState):
         excecution_count = state["excecution_count"]
         if excecution_count == 0:
-            further_questions = True
+            further_details = True
         else:
-            further_questions = False
-        return {"further_questions": further_questions}
+            further_details = False
+        return {"further_details": further_details}
 
     def decide_ticket_details_provided(state: GraphState):
         print("decide_ticket_details_provided")
-        further_questions = state["further_questions"]
-        if further_questions:
-            print("ask_further_questions")
-            return "ask_further_questions"
+        further_details = state["further_details"]
+        if further_details:
+            print("ask_for_ticket_details")
+            return "ask_for_ticket_details"
         else:
             print("generate_ticket")
             return "generate_ticket"
