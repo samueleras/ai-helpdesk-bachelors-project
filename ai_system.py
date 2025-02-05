@@ -87,9 +87,9 @@ def initialize_langchain(config: AppConfig):
             documents = [
                 {
                     "role": "system",
-                    "content": f"Reference document (Source: {doc['entity']['metadata']['source']}): {doc['entity']['text']}",
+                    "content": f"Reference document (Source: {doc['entity']['metadata']}): {doc['entity']['text']}",
                 }
-                for doc in retrieved_data["documents"]
+                for doc in retrieved_data
             ]
         return {"documents": documents}
 
@@ -104,7 +104,7 @@ def initialize_langchain(config: AppConfig):
             score = retrieval_grader_chain.invoke(
                 {
                     "input": input,
-                    "document": doc,
+                    "document": [doc],
                     "chat_history": chat_history,
                 }
             ).content[0]
