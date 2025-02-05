@@ -267,13 +267,13 @@ def initialize_milvus(config_file: AppConfig):
     if not milvus_client:
         raise ConnectionError("Connecting to Milvus failed.")
     # Clear whole vector db
-    """ try:
+    try:
         result = milvus_client.delete(
             collection_name="collection_rag", filter="id >= 0"
         )
         print(f"Deletion result: {result}")
     except Exception as e:
-        print(f"Error during deletion: {e}") """
+        print(f"Error during deletion: {e}")
     _initialize_directory(
         milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
     )
@@ -288,7 +288,7 @@ def initialize_milvus(config_file: AppConfig):
     watcher_thread.start()
 
 
-def retrieve_documents(query: str) -> List[dict]:
+def retrieve_documents_milvus(query: str) -> List[dict]:
     query_vector = embedding_model.embed_query(query)
     return milvus_client.search(
         collection_name="collection_rag",
@@ -300,7 +300,7 @@ def retrieve_documents(query: str) -> List[dict]:
     )[0]
 
 
-def store_ticket(ticket: Ticket) -> None:
+def store_ticket_milvus(ticket: Ticket) -> None:
 
     embedding = embedding_model.embed_documents(ticket["summary"])
 
@@ -309,7 +309,7 @@ def store_ticket(ticket: Ticket) -> None:
     milvus_client.insert(collection_name="collection_ticket", data=data)
 
 
-def retrieve_similar_tickets(ticket: Ticket) -> List[dict]:
+def retrieve_similar_tickets_milvus(ticket: Ticket) -> List[dict]:
     query_vector = embedding_model.embed_query(ticket["summary"])
     return milvus_client.search(
         collection_name="collection_ticket",

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import os
 from typing import Callable, List, Tuple
-from vectordb import retrieve_documents
+from vectordb import retrieve_documents_milvus
 from langchain_ollama import ChatOllama
 from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
@@ -14,7 +14,6 @@ from prompts import (
     query_prompt_with_context,
     grading_prompt,
     solvability_prompt,
-    details_provided_prompt,
     further_questions_prompt,
     troubleshooting_prompt,
     ticket_issue_description_prompt,
@@ -59,17 +58,30 @@ def initialize_langchain(config: AppConfig):
         cleaned_response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL)
         return cleaned_response.strip()
 
-    def retrieve(state: GraphState):
-        input = state["input"]
-        chat_history = state["chat_history"]
+    def retrieve_or_generate_query_prompt(state: GraphState):
+        print("retrieve_or_generate_query_prompt")
         query_prompt = state["query_prompt"]
         if query_prompt == "":
-            query_prompt = history_aware_query_chain.invoke(
-                {"input": input, "chat_history": chat_history}
-            ).content
+            print("generate_query_prompt")
+            return "generate_query_prompt"
+        else:
+            print("retrieve_documents")
+            return "retrieve_documents"
+
+    def generate_query_prompt(state: GraphState):
+        input = state["input"]
+        chat_history = state["chat_history"]
+        query_prompt = history_aware_query_chain.invoke(
+            {"input": input, "chat_history": chat_history}
+        ).content
         query_prompt = remove_think_tags(query_prompt)
-        print(query_prompt)
-        retrieved_data = retrieve_documents(query_prompt)
+        return {"query_prompt": query_prompt}
+
+    def retrieve_documents(state: GraphState):
+        query_prompt = state["query_prompt"]
+        print("Query Prompt: ", query_prompt)
+        print("retrieve_documents")
+        retrieved_data = retrieve_documents_milvus(query_prompt)
         documents = []
         if retrieved_data:
             documents = [
@@ -79,9 +91,10 @@ def initialize_langchain(config: AppConfig):
                 }
                 for doc in retrieved_data["documents"]
             ]
-        return {"documents": documents, "query_prompt": query_prompt}
+        return {"documents": documents}
 
     def grade_documents(state: GraphState):
+        print("grade_documents")
         input = state["input"]
         documents = state["documents"]
         chat_history = state["chat_history"]
@@ -107,6 +120,7 @@ def initialize_langchain(config: AppConfig):
         }
 
     def decide_web_search(state: GraphState):
+        print("decide_web_search")
         web_search = state["web_search"]
         ticket = state["ticket"]
         if web_search:
@@ -138,6 +152,7 @@ def initialize_langchain(config: AppConfig):
             raise
 
     def check_web_search_cause(state: GraphState):
+        print("check_web_search_cause")
         ticket = state["ticket"]
         if ticket:
             print("check_further_questions_or_generation_pathway")
@@ -173,6 +188,7 @@ def initialize_langchain(config: AppConfig):
         return {"further_questions": further_questions}
 
     def decide_ask_further_questions_or_generate_ticket(state: GraphState):
+        print("decide_ask_further_questions_or_generate_ticket")
         further_questions = state["further_questions"]
         if further_questions:
             print("ask_further_questions")
@@ -182,6 +198,7 @@ def initialize_langchain(config: AppConfig):
             return "generate_ticket"
 
     def decide_generate_solution_or_offer_ticket(state: GraphState):
+        print("decide_generate_solution_or_offer_ticket")
         solvable = state["solvable"]
         print(solvable[0])
         if solvable[0] == "1":
@@ -264,7 +281,13 @@ def initialize_langchain(config: AppConfig):
     workflow = StateGraph(GraphState)
 
     # Define the nodes
-    workflow.add_node("retrieve", retrieve)  # retrieve
+    workflow.add_node(
+        "retrieve_or_generate_query_prompt", retrieve_or_generate_query_prompt
+    )  # decide retrieve or generate query prompt
+    workflow.add_node(
+        "generate_query_prompt", generate_query_prompt
+    )  # generate query prompt
+    workflow.add_node("retrieve_documents", retrieve_documents)  # retrieve
     workflow.add_node("grade_documents", grade_documents)  # grade documents
     workflow.add_node("perform_web_search", perform_web_search)  # web search
     workflow.add_node(
@@ -286,8 +309,16 @@ def initialize_langchain(config: AppConfig):
     workflow.add_node("generate_ticket", generate_ticket)  # create ticket
 
     # Build graph
-    workflow.add_edge(START, "retrieve")
-    workflow.add_edge("retrieve", "grade_documents")
+    workflow.add_conditional_edges(
+        START,
+        retrieve_or_generate_query_prompt,
+        {
+            "generate_query_prompt": "generate_query_prompt",
+            "retrieve_documents": "retrieve_documents",
+        },
+    )
+    workflow.add_edge("generate_query_prompt", "retrieve_documents")
+    workflow.add_edge("retrieve_documents", "grade_documents")
     workflow.add_conditional_edges(
         "grade_documents",
         decide_web_search,
