@@ -35,6 +35,6 @@
     "default_prompt": "Generate a concise summary of the ticket provided:"
   },
   "ticket_title_prompt": {
-    "default_prompt": "Generate a concise and fitting title for the ticket provided:"
+    "default_prompt": "Generate one single concise title for the ticket provided, without extra text or explanations:"
   }
 }
