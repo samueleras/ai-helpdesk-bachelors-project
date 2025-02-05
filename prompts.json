@@ -9,7 +9,7 @@
   },
   "solvability_prompt": {
     "default_prompt": "Determine if the user's issue can be solved without administrative privileges or has already done a lot  of troubleshooting. Respond with '1' if possible, or with '0' if not or if the user already did a lot of troubleshooting.",
-    "followup_prompt": "Can this issue likely be resolved without administrative privileges? If yes, reply with '1', if no or if the user already did a lot of troubleshooting reply with '0' and give NO further explanation"
+    "followup_prompt": "Can this issue likely be resolved without administrative privileges? If yes, reply with '1', if no reply with '0' and give NO further explanation"
   },
   "details_provided_prompt": {
     "default_prompt": "Determine if the user gave enough information for creating a helpdesk ticket to potentially solve this solution.",
@@ -21,7 +21,7 @@
   },
   "further_questions_prompt": {
     "default_prompt": "There is some information missing in the conversation below to solve the mentioned issue. Determine which information would be useful and can be provided by the user by using your knowledge and the documents provided.",
-    "followup_prompt": "Ask only a few important questions to assure this issue can be solved. Tell the user the answers are needed for the ticket generation."
+    "followup_prompt": "Ask questions to assure this issue can be solved. Tell the user the answers are needed for the ticket generation."
   },
   "ticket_issue_description_prompt": {
     "default_prompt": "Analyze the provided conversation and generate a comprehensive, in-depth explanation of the user's issue. \n Include all relevant details such as background information, specific error messages, affected systems, processes, and software or OS versions. \n Provide a detailed explanation of the troubleshooting steps already performed by the user.\n Ensure the explanation provides full context, captures technical details thoroughly.",

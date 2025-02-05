@@ -120,6 +120,7 @@ def ticket_issue_description_prompt():
                 prompts["ticket_issue_description_prompt"]["default_prompt"],
             ),
             MessagesPlaceholder("chat_history"),
+            MessagesPlaceholder("input"),
             (
                 "system",
                 prompts["ticket_issue_description_prompt"]["followup_prompt"],
