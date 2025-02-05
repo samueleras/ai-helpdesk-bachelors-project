@@ -19,6 +19,7 @@ from prompts import (
     ticket_issue_description_prompt,
     ticket_propose_solutions_prompt,
     ticket_summary_prompt,
+    ticket_title_prompt,
 )
 
 
@@ -49,6 +50,8 @@ def initialize_langchain(config: AppConfig):
     ticket_propose_solutions_chain = ticket_propose_solutions_prompt() | llm
 
     ticket_summary_chain = ticket_summary_prompt() | llm
+
+    ticket_title_chain = ticket_title_prompt() | llm
 
     app_path = os.path.dirname(os.path.abspath(__file__))
     messages = load_json(os.path.join(app_path, "messages.json"))
@@ -268,9 +271,15 @@ def initialize_langchain(config: AppConfig):
                 {"ticket": [SystemMessage(content=issue_description)]}
             ).content
             ticket_summary = remove_think_tags(ticket_summary)
+            print("generate_ticket_title")
+            ticket_title = ticket_title_chain.invoke(
+                {"ticket": [SystemMessage(content=ticket_summary)]}
+            ).content
+            ticket_title = remove_think_tags(ticket_title)
             return {
                 "ticket_content": generated_ticket,
                 "ticket_summary": ticket_summary,
+                "ticket_title": ticket_title,
             }
         except Exception as e:
             print(f"ERROR in generate_ticket: {str(e)}")
@@ -383,6 +392,7 @@ def initialize_langchain(config: AppConfig):
             print("Execution Count: ", excecution_count)
             response: WorkflowResponse = {
                 "llm_output": state_dict.get("generation", ""),
+                "ticket_title": state_dict.get("ticket_title", ""),
                 "ticket_content": state_dict.get("ticket_content", ""),
                 "ticket_summary": state_dict.get("ticket_summary", ""),
                 "query_prompt": state_dict.get("query_prompt", ""),

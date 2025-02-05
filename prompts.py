@@ -150,3 +150,15 @@ def ticket_summary_prompt():
             MessagesPlaceholder("ticket"),
         ]
     )
+
+
+def ticket_title_prompt():
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                prompts["ticket_title_prompt"]["default_prompt"],
+            ),
+            MessagesPlaceholder("ticket"),
+        ]
+    )

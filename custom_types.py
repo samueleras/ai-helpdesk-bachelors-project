@@ -36,6 +36,7 @@ class WorkflowRequest(TypedDict):
 
 class WorkflowResponse(TypedDict):
     llm_output: str
+    ticket_title: str
     ticket_content: str
     ticket_summary: str
     query_prompt: str
@@ -46,14 +47,15 @@ class GraphState(TypedDict):
     input: str
     chat_history: str
     query_prompt: str = ""
-    generation: str = ""
+    documents: List[dict]
     web_search: bool
     solvable: str
-    further_questions: bool = False
-    documents: List[dict]
-    ticket: bool
+    further_details: bool = False
+    generation: str = ""
     ticket_content: str = ""
     ticket_summary: str = ""
+    ticket_title: str = ""
+    ticket: bool
     excecution_count: int
 
 
