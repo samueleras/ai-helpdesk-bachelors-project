@@ -37,6 +37,7 @@ def init_ai_workflow():
             conversation=data["conversation"],
             query_prompt=data.get("query_prompt", ""),
             ticket=data["ticket"],
+            excecution_count=data["excecution_count"],
         )
     except ValidationError as e:
         return jsonify({"error": "Invalid request data", "details": e.errors()}), 400
@@ -46,11 +47,12 @@ def init_ai_workflow():
     conversation = validated_data.conversation
     query_prompt = validated_data.query_prompt
     ticket = validated_data.ticket
+    excecution_count = validated_data.excecution_count
 
     # Use the LangChain model to generate a response or a ticket, depending on the ticket variable
     try:
         response: WorkflowRequestModel = langchain_model.initiate_workflow(
-            conversation, query_prompt, ticket
+            conversation, query_prompt, ticket, excecution_count
         )
     except RuntimeError as e:
         return jsonify({"error": f"Workflow execution failed: {str(e)}"}), 500
@@ -77,7 +79,7 @@ def init_ai_workflow():
 
                 response = {
                     "ticket_id": ticket_id,
-                    "llm_output": content,
+                    "ticket_content": content,
                 }
                 return jsonify({"response": response}, 200)
 

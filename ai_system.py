@@ -110,8 +110,8 @@ def initialize_langchain(config: AppConfig):
             print("perform_web_search")
             return "perform_web_search"
         elif ticket:
-            print("check_details_provided")
-            return "check_details_provided"
+            print("check_further_questions_or_generation_pathway")
+            return "check_further_questions_or_generation_pathway"
         else:
             print("check_solvability")
             return "check_solvability"
@@ -137,13 +137,17 @@ def initialize_langchain(config: AppConfig):
     def check_web_search_cause(state: GraphState):
         ticket = state["ticket"]
         if ticket:
-            print("check_details_provided")
-            return "check_details_provided"
+            print("check_further_questions_or_generation_pathway")
+            return "check_further_questions_or_generation_pathway"
         else:
             print("check_solvability")
             return "check_solvability"
 
     def check_solvability(state: GraphState):
+        excecution_count = state["excecution_count"]
+        if excecution_count >= 3:
+            print("Execition >= 3, therefore propose ticket!")
+            return {"solvable": "0"}
         input = state["input"]
         chat_history = state["chat_history"]
         documents = state["documents"]
@@ -157,26 +161,22 @@ def initialize_langchain(config: AppConfig):
         solvable = remove_think_tags(solvable)
         return {"solvable": solvable}
 
-    def check_details_provided(state: GraphState):
-        input = state["input"]
-        chat_history = state["chat_history"]
-        details_provided = details_provided_chain.invoke(
-            {
-                "input": input,
-                "chat_history": chat_history,
-            },
-        ).content
-        details_provided = remove_think_tags(details_provided)
-        return {"details_provided": details_provided}
+    def check_further_questions_or_generation_pathway(state: GraphState):
+        excecution_count = state["excecution_count"]
+        if excecution_count == 0:
+            further_questions = True
+        else:
+            further_questions = False
+        return {"further_questions": further_questions}
 
     def decide_ask_further_questions_or_generate_ticket(state: GraphState):
-        details_provided = state["details_provided"]
-        if details_provided[0] == "1":
+        further_questions = state["further_questions"]
+        if further_questions:
+            print("ask_further_questions")
+            return "ask_further_questions"
+        else:
             print("generate_ticket")
             return "generate_ticket"
-        else:
-            print("further_questions")
-            return "further_questions"
 
     def decide_generate_solution_or_offer_ticket(state: GraphState):
         solvable = state["solvable"]
@@ -211,7 +211,7 @@ def initialize_langchain(config: AppConfig):
                     Before submitting the ticket, I may need to ask you a few additional questions to gather all necessary information for our support team."""
         return {"generation": text, "ticket": True}
 
-    def further_questions(state: GraphState):
+    def ask_further_questions(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
         documents = state["documents"]
@@ -227,11 +227,15 @@ def initialize_langchain(config: AppConfig):
 
     def generate_ticket(state: GraphState):
         try:
+            input = state["input"]
             chat_history = state["chat_history"]
             documents = state["documents"]
             print("generate_issue_description")
             issue_description = ticket_issue_description_chain.invoke(
-                {"chat_history": chat_history}
+                {
+                    "chat_history": chat_history,
+                    "input": input,
+                }
             ).content
             issue_description = remove_think_tags(issue_description)
             print("generate_proposed_solutions")
@@ -267,8 +271,9 @@ def initialize_langchain(config: AppConfig):
         "check_solvability", check_solvability
     )  # Check whether the issue can actually be solved by the user without administrative privileges
     workflow.add_node(
-        "check_details_provided", check_details_provided
-    )  # check if all necessary information is provided by user in order to generate a ticket
+        "check_further_questions_or_generation_pathway",
+        check_further_questions_or_generation_pathway,
+    )  # check if questions were already asked
     workflow.add_node(
         "generate_solution", generate_solution
     )  # generate a proposed solution for the offer
@@ -276,7 +281,7 @@ def initialize_langchain(config: AppConfig):
         "offer_ticket", offer_ticket
     )  # Offer to create a ticket on behalf of the user
     workflow.add_node(
-        "further_questions", further_questions
+        "ask_further_questions", ask_further_questions
     )  # ask further questions to get all details from user
     workflow.add_node("generate_ticket", generate_ticket)  # create ticket
 
@@ -289,7 +294,7 @@ def initialize_langchain(config: AppConfig):
         {
             "perform_web_search": "perform_web_search",
             "check_solvability": "check_solvability",
-            "check_details_provided": "check_details_provided",
+            "check_further_questions_or_generation_pathway": "check_further_questions_or_generation_pathway",
         },
     )
     workflow.add_conditional_edges(
@@ -297,7 +302,7 @@ def initialize_langchain(config: AppConfig):
         check_web_search_cause,
         {
             "check_solvability": "check_solvability",
-            "check_details_provided": "check_details_provided",
+            "check_further_questions_or_generation_pathway": "check_further_questions_or_generation_pathway",
         },
     )
     workflow.add_conditional_edges(
@@ -309,22 +314,25 @@ def initialize_langchain(config: AppConfig):
         },
     )
     workflow.add_conditional_edges(
-        "check_details_provided",
+        "check_further_questions_or_generation_pathway",
         decide_ask_further_questions_or_generate_ticket,
         {
-            "further_questions": "further_questions",
+            "ask_further_questions": "ask_further_questions",
             "generate_ticket": "generate_ticket",
         },
     )
     workflow.add_edge("offer_ticket", END)
     workflow.add_edge("generate_solution", END)
-    workflow.add_edge("further_questions", END)
+    workflow.add_edge("ask_further_questions", END)
     workflow.add_edge("generate_ticket", END)
 
     custom_graph = workflow.compile()
 
     def initiate_workflow(
-        conversation: List[Tuple[str, str]], query_prompt: str, ticket: bool
+        conversation: List[Tuple[str, str]],
+        query_prompt: str,
+        ticket: bool,
+        excecution_count: int,
     ) -> WorkflowResponse:
         try:
             input = [conversation.pop()]
@@ -338,9 +346,11 @@ def initialize_langchain(config: AppConfig):
                     "chat_history": chat_history,
                     "query_prompt": query_prompt,
                     "ticket": ticket,
+                    "excecution_count": excecution_count,
                 },
                 config,
             )
+            print("Execution Count: ", excecution_count)
             response: WorkflowResponse = {
                 "llm_output": state_dict.get("generation", ""),
                 "ticket_content": state_dict.get("ticket_content", ""),

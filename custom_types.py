@@ -44,11 +44,12 @@ class GraphState(TypedDict):
     generation: str = ""
     web_search: bool
     solvable: str
-    details_provided: str
+    further_questions: bool = False
     documents: List[dict]
     ticket: bool
     ticket_content: str = ""
     ticket_summary: str = ""
+    excecution_count: int
 
 
 class Ticket(TypedDict):

@@ -6,3 +6,4 @@ class WorkflowRequestModel(BaseModel):
     conversation: List[Tuple[str, str]]
     query_prompt: str = ""
     ticket: bool
+    excecution_count: int
