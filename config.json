@@ -3,6 +3,9 @@
     "llm": "gemma2:9b-instruct-q4_K_M",
     "embedding_model": "mxbai-embed-large"
   },
+  "workflow": {
+    "max_count_of_troubleshootings": 3
+  },
   "milvus": {
     "host": "http://localhost:19530",
     "user": "aihelpdesk",

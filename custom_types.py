@@ -7,6 +7,10 @@ class OllamaConfig(TypedDict):
     embedding_model: str
 
 
+class WorkflowConfig(TypedDict):
+    max_count_of_troubleshootings: int
+
+
 class MilvusConfig(TypedDict):
     host: str
     user: str
@@ -20,6 +24,7 @@ class MilvusConfig(TypedDict):
 
 class AppConfig(TypedDict):
     ollama: OllamaConfig
+    workflow: WorkflowConfig
     milvus: MilvusConfig
 
 

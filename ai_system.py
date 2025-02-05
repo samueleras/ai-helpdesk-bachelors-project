@@ -148,7 +148,7 @@ def initialize_langchain(config: AppConfig):
 
     def check_solvability(state: GraphState):
         excecution_count = state["excecution_count"]
-        if excecution_count >= 3:
+        if excecution_count >= config["workflow"]["max_count_of_troubleshootings"]:
             print("Execition >= 3, therefore propose ticket!")
             return {"solvable": "0"}
         input = state["input"]
