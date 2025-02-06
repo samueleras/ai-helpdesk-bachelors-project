@@ -2,6 +2,7 @@ import json
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from vectordb import initialize_milvus
 from ai_system import initialize_langchain
 from custom_types import WorkflowResponse, AppConfig
@@ -30,6 +31,12 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+app.mount(
+    "/",
+    StaticFiles(directory=os.path.join(app_path, "static"), html=True),
+    name="frontend",
 )
 
 
