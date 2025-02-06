@@ -33,7 +33,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 TOKEN_URL = f"{AUTHORITY}/oauth2/v2.0/token"
 GRAPH_API_URL = "https://graph.microsoft.com/v1.0/me"
-APP_USERS_GROUP_ID = os.getenv("APP_USERS_GROUP_ID")
+USERS_GROUP_ID = os.getenv("USERS_GROUP_ID")
 TECHNICIANS_GROUP_ID = os.getenv("TECHNICIANS_GROUP_ID")
 
 # OAuth2 Scheme
@@ -59,6 +59,15 @@ app.mount(
     StaticFiles(directory=os.path.join(app_path, "static"), html=True),
     name="frontend",
 )
+
+
+# Check if token is valid => user is authenticated
+def verify_token(token: str = Depends(oauth2_scheme)) -> None:
+    headers = {"Authorization": f"Bearer {token}"}
+    response = requests.get(GRAPH_API_URL, headers=headers)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
 # Extract Current User and Groups
@@ -118,7 +127,7 @@ async def read_users_me(user: Dict = Depends(get_current_user)):
 
 # Protected Route for Regular Users
 @app.get("/user")
-async def user_route(user: Dict = Depends(check_user_role(APP_USERS_GROUP_ID))):
+async def user_route(user: Dict = Depends(check_user_role(USERS_GROUP_ID))):
     return {"message": "Welcome, regular user!", "user": user}
 
 
@@ -129,7 +138,7 @@ async def technician_route(user: Dict = Depends(check_user_role(TECHNICIANS_GROU
 
 
 @app.post("/init_ai_workflow")
-async def init_ai_workflow(data: WorkflowRequestModel):
+async def init_ai_workflow(data: WorkflowRequestModel, _: None = Depends(verify_token)):
     try:
         # Process input
         conversation = data.conversation
