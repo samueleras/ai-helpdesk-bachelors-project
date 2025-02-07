@@ -130,6 +130,14 @@ async def serve_frontend():
 # Return user properties for frontend, only possible if token is valid => User authenticated
 @app.get("/users/me")
 async def read_users_me(user: Annotated[User, Depends(get_current_user)]):
+    groups = []
+    # Translate groups into group names for frontend use
+    for groupid in user.groups:
+        if groupid == USERS_GROUP_ID:
+            groups.append("users")
+        if groupid == TECHNICIANS_GROUP_ID:
+            groups.append("technicians")
+    user.groups = groups
     return user
 
 
