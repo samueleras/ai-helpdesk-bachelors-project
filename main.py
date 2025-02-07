@@ -167,7 +167,7 @@ async def init_ai_workflow(
         excecution_count = data.excecution_count
 
         # Use the LangChain model to generate a response or a ticket
-        response: WorkflowResponse = await langchain_model.initiate_workflow(
+        response: WorkflowResponse = await langchain_model.initiate_workflow_async(
             conversation, query_prompt, ticket, excecution_count
         )
     except RuntimeError as e:
@@ -178,21 +178,21 @@ async def init_ai_workflow(
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
     # If a ticket was generated, store it in the database and return the ID
-    if response.ticket_content:
+    if response["ticket_content"]:
         attempts = 0
         while attempts < 3:
             try:
                 if attempts > 0:
                     response: WorkflowResponse = (
-                        await langchain_model.initiate_workflow(
+                        await langchain_model.initiate_workflow_async(
                             conversation, query_prompt, ticket, excecution_count
                         )
                     )
 
                 # Convert response fields to JSON-safe format
-                title = json.dumps(response.query_prompt)
-                content = json.dumps(response.ticket_content)
-                summary = json.dumps(response.ticket_summary)
+                title = json.dumps(response["ticket_title"])
+                content = json.dumps(response["ticket_content"])
+                summary = json.dumps(response["ticket_summary"])
 
                 # Simulate storing ticket in DB
                 ticket_id = 5  # Replace with actual database logic
