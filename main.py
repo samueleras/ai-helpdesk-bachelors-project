@@ -12,7 +12,7 @@ from pydantic_models import WorkflowRequestModel
 from utils import load_json
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2AuthorizationCodeBearer
-from typing import Callable, Dict
+from typing import Annotated, Callable, Dict
 import requests
 import jwt
 
@@ -31,7 +31,9 @@ langchain_model = initialize_langchain(config)
 TENANT_ID = os.getenv("TENANT_ID")
 CLIENT_ID = os.getenv("CLIENT_ID")
 AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
-TOKEN_URL = f"{AUTHORITY}/oauth2/v2.0/token"
+TOKEN_URL = (
+    f"{AUTHORITY}/oauth2/v2.0/token"  # Where the frontend will fetch the token from
+)
 GRAPH_API_URL = "https://graph.microsoft.com/v1.0/me"
 USERS_GROUP_ID = os.getenv("USERS_GROUP_ID")
 TECHNICIANS_GROUP_ID = os.getenv("TECHNICIANS_GROUP_ID")
@@ -62,7 +64,7 @@ app.mount(
 
 
 # Check if token is valid => user is authenticated
-def verify_token(token: str = Depends(oauth2_scheme)) -> None:
+def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> None:
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(GRAPH_API_URL, headers=headers)
 
@@ -71,7 +73,7 @@ def verify_token(token: str = Depends(oauth2_scheme)) -> None:
 
 
 # Extract Current User and Groups
-def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict:
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Dict:
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
@@ -99,7 +101,7 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> Dict:
 
 # Check user roles for authorisation
 def check_user_role(required_group_id: str) -> Callable[[Dict], Dict]:
-    def role_checker(user: Dict = Depends(get_current_user)) -> Dict:
+    def role_checker(user: Annotated[Dict, Depends(get_current_user)]) -> Dict:
         user_groups = user.get("groups", [])
         if required_group_id not in user_groups:
             raise HTTPException(status_code=403, detail="Unauthorized access")
@@ -116,7 +118,7 @@ async def serve_frontend():
 
 # Return user properties for frontend, only possible if token is valid => User authenticated
 @app.get("/users/me")
-async def read_users_me(user: Dict = Depends(get_current_user)):
+async def read_users_me(user: Annotated[Dict, Depends(get_current_user)]):
     return {
         "user_id": user.get("id"),
         "name": user.get("displayName"),
@@ -127,18 +129,22 @@ async def read_users_me(user: Dict = Depends(get_current_user)):
 
 # Protected Route for Regular Users
 @app.get("/user")
-async def user_route(user: Dict = Depends(check_user_role(USERS_GROUP_ID))):
+async def user_route(user: Annotated[Dict, Depends(check_user_role(USERS_GROUP_ID))]):
     return {"message": "Welcome, regular user!", "user": user}
 
 
 # Protected Route for Technicians
 @app.get("/technician")
-async def technician_route(user: Dict = Depends(check_user_role(TECHNICIANS_GROUP_ID))):
+async def technician_route(
+    user: Annotated[Dict, Depends(check_user_role(TECHNICIANS_GROUP_ID))]
+):
     return {"message": "Welcome, Technician!", "user": user}
 
 
 @app.post("/init_ai_workflow")
-async def init_ai_workflow(data: WorkflowRequestModel, _: None = Depends(verify_token)):
+async def init_ai_workflow(
+    data: WorkflowRequestModel, _: Annotated[None, Depends(verify_token)]
+):
     try:
         # Process input
         conversation = data.conversation
