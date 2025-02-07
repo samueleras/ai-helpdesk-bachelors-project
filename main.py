@@ -8,7 +8,7 @@ from vectordb import initialize_milvus
 from ai_system import initialize_langchain
 from custom_types import WorkflowResponse, AppConfig
 from dotenv import load_dotenv
-from pydantic_models import WorkflowRequestModel
+from pydantic_models import User, WorkflowRequestModel
 from utils import load_json
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2AuthorizationCodeBearer
@@ -34,14 +34,16 @@ AUTHORITY = f"https://login.microsoftonline.com/{TENANT_ID}"
 TOKEN_URL = (
     f"{AUTHORITY}/oauth2/v2.0/token"  # Where the frontend will fetch the token from
 )
-GRAPH_API_URL = "https://graph.microsoft.com/v1.0/me"
+GRAPH_API_URL = (
+    "https://graph.microsoft.com/v1.0/me"  # Backend verifys token and fetches user info
+)
 USERS_GROUP_ID = os.getenv("USERS_GROUP_ID")
 TECHNICIANS_GROUP_ID = os.getenv("TECHNICIANS_GROUP_ID")
 
 # OAuth2 Scheme
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
     authorizationUrl=f"{AUTHORITY}/oauth2/v2.0/authorize", tokenUrl=TOKEN_URL
-)
+)  # Authorisation url is where users authenticate (login with azure account)
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -73,12 +75,12 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> None:
 
 
 # Extract Current User and Groups
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Dict:
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
         response = requests.get(GRAPH_API_URL, headers=headers)
-        user = response.json()
+        user_resp = response.json()
 
         if response.status_code != 200:
             raise HTTPException(status_code=401, detail="Invalid token")
@@ -86,13 +88,22 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Dic
         groups_response = requests.get(f"{GRAPH_API_URL}/memberOf", headers=headers)
         groups_data = groups_response.json()
 
+        groups = []
+        # Convert groups in frontend understandable groupnames
         if "value" in groups_data:
-            user["groups"] = [group["id"] for group in groups_data["value"]]
-        else:
-            user["groups"] = []
+            groups = [group["id"] for group in groups_data["value"]]
 
-        return user
+        return User(
+            user_id=user_resp.get("id"),
+            user_name=user_resp.get("displayName"),
+            email=user_resp.get("mail") or user_resp.get("userPrincipalName"),
+            groups=groups,
+        )
 
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(
+            status_code=500, detail="Error connecting to Microsoft Graph API"
+        )
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
     except Exception:
@@ -100,9 +111,9 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Dic
 
 
 # Check user roles for authorisation
-def check_user_role(required_group_id: str) -> Callable[[Dict], Dict]:
-    def role_checker(user: Annotated[Dict, Depends(get_current_user)]) -> Dict:
-        user_groups = user.get("groups", [])
+def check_user_role(required_group_id: str) -> Callable[[User], User]:
+    def role_checker(user: Annotated[User, Depends(get_current_user)]) -> User:
+        user_groups = user.groups
         if required_group_id not in user_groups:
             raise HTTPException(status_code=403, detail="Unauthorized access")
         return user
@@ -118,25 +129,20 @@ async def serve_frontend():
 
 # Return user properties for frontend, only possible if token is valid => User authenticated
 @app.get("/users/me")
-async def read_users_me(user: Annotated[Dict, Depends(get_current_user)]):
-    return {
-        "user_id": user.get("id"),
-        "name": user.get("displayName"),
-        "email": user.get("mail") or user.get("userPrincipalName"),
-        "groups": user.get("groups", []),
-    }
+async def read_users_me(user: Annotated[User, Depends(get_current_user)]):
+    return user
 
 
 # Protected Route for Regular Users
 @app.get("/user")
-async def user_route(user: Annotated[Dict, Depends(check_user_role(USERS_GROUP_ID))]):
+async def user_route(user: Annotated[User, Depends(check_user_role(USERS_GROUP_ID))]):
     return {"message": "Welcome, regular user!", "user": user}
 
 
 # Protected Route for Technicians
 @app.get("/technician")
 async def technician_route(
-    user: Annotated[Dict, Depends(check_user_role(TECHNICIANS_GROUP_ID))]
+    user: Annotated[User, Depends(check_user_role(TECHNICIANS_GROUP_ID))]
 ):
     return {"message": "Welcome, Technician!", "user": user}
 

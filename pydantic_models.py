@@ -7,3 +7,10 @@ class WorkflowRequestModel(BaseModel):
     query_prompt: str = ""
     ticket: bool
     excecution_count: int
+
+
+class User(BaseModel):
+    user_id: str
+    user_name: str
+    email: str
+    groups: List[str]
