@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 import os
 from typing import Callable, List, Tuple
@@ -25,7 +26,7 @@ from prompts import (
 
 @dataclass
 class LangChainModel:
-    initiate_workflow: Callable[[WorkflowRequest], WorkflowResponse]
+    initiate_workflow_async: Callable[[WorkflowRequest], WorkflowResponse]
 
 
 # Initialize the LangChain model (this part can be copied from your notebook)
@@ -367,6 +368,17 @@ def initialize_langchain(config: AppConfig):
 
     custom_graph = workflow.compile()
 
+    async def initiate_workflow_async(
+        conversation: List[Tuple[str, str]],
+        query_prompt: str,
+        ticket: bool,
+        excecution_count: int,
+    ) -> WorkflowResponse:
+        response = await asyncio.to_thread(
+            initiate_workflow, conversation, query_prompt, ticket, excecution_count
+        )
+        return response
+
     def initiate_workflow(
         conversation: List[Tuple[str, str]],
         query_prompt: str,
@@ -404,4 +416,4 @@ def initialize_langchain(config: AppConfig):
             print(f"ERROR in initiate_workflow: {str(e)}")
             raise RuntimeError(f"Workflow failed: {str(e)}")
 
-    return LangChainModel(initiate_workflow)
+    return LangChainModel(initiate_workflow_async)
