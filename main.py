@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+import mysql.connector
 from vectordb import initialize_milvus
 from ai_system import initialize_langchain
 from custom_types import WorkflowResponse, AppConfig
@@ -15,6 +16,7 @@ from fastapi.security import OAuth2AuthorizationCodeBearer
 from typing import Annotated, Callable, Dict
 import requests
 import jwt
+from relationaldb import insert_ticket
 
 # Load environment variables
 load_dotenv()
@@ -66,16 +68,22 @@ app.mount(
 
 
 # Check if token is valid => user is authenticated
-def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> None:
+def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> str:
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(GRAPH_API_URL, headers=headers)
 
     if response.status_code != 200:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
+    user_resp = response.json()
+    user_id = user_resp.get("id")
+    return user_id
+
 
 # Extract Current User and Groups
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
+async def get_current_user_with_groups(
+    token: Annotated[str, Depends(oauth2_scheme)]
+) -> User:
     headers = {"Authorization": f"Bearer {token}"}
 
     try:
@@ -112,7 +120,9 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]) -> Use
 
 # Check user roles for authorisation
 def check_user_role(required_group_id: str) -> Callable[[User], User]:
-    def role_checker(user: Annotated[User, Depends(get_current_user)]) -> User:
+    def role_checker(
+        user: Annotated[User, Depends(get_current_user_with_groups)]
+    ) -> User:
         user_groups = user.groups
         if required_group_id not in user_groups:
             raise HTTPException(status_code=403, detail="Unauthorized access")
@@ -129,7 +139,7 @@ async def serve_frontend():
 
 # Return user properties for frontend, only possible if token is valid => User authenticated
 @app.get("/users/me")
-async def read_users_me(user: Annotated[User, Depends(get_current_user)]):
+async def read_users_me(user: Annotated[User, Depends(get_current_user_with_groups)]):
     groups = []
     # Translate groups into group names for frontend use
     for groupid in user.groups:
@@ -157,7 +167,7 @@ async def technician_route(
 
 @app.post("/init_ai_workflow")
 async def init_ai_workflow(
-    data: WorkflowRequestModel, _: Annotated[None, Depends(verify_token)]
+    data: WorkflowRequestModel, user_id: Annotated[str, Depends(verify_token)]
 ):
     try:
         # Process input
@@ -194,17 +204,21 @@ async def init_ai_workflow(
                 content = json.dumps(response["ticket_content"])
                 summary = json.dumps(response["ticket_summary"])
 
-                # Simulate storing ticket in DB
-                ticket_id = 5  # Replace with actual database logic
-
+                # Store ticket in DB
+                ticket_id = insert_ticket(title, content, summary, user_id)
                 return {"ticket_id": ticket_id, "ticket_content": content}
+
             except json.JSONDecodeError as e:
                 print(f"JSON parsing error on attempt {attempts + 1}: {e}")
-                attempts += 1
+            except mysql.connector.Error as e:
+                print(f"Database error on attempt {attempts + 1}: {e}")
+            except Exception as e:
+                print(f"Unexpected error on attempt {attempts + 1}: {e}")
+
+            attempts += 1
 
         raise HTTPException(
             status_code=500, detail="Failed to process ticket after multiple attempts"
         )
 
-    # Return the result
     return response

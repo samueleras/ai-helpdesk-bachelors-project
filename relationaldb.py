@@ -19,3 +19,27 @@ def connect_to_mysql():
         else:
             print(err)
         return None
+
+
+def insert_ticket(title: str, content: str, summary: str, author_id: str) -> int:
+    cnx = connect_to_mysql()
+    if not cnx:
+        return {"error": "Database connection failed"}
+
+    cursor = cnx.cursor()
+
+    try:
+        query = "INSERT INTO tickets (title, content, summary, author_id) VALUES (%s, %s, %s)"
+        values = (title, content, summary, author_id)
+        cursor.execute(query, values)
+        cnx.commit()
+        ticket_id = cursor.lastrowid  # Get auto-generated ticket_id
+
+        return ticket_id
+
+    except mysql.connector.Error as err:
+        raise RuntimeError(f"Database error: {err}")
+
+    finally:
+        cursor.close()
+        cnx.close()
