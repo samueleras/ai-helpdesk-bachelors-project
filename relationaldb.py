@@ -2,7 +2,7 @@ import mysql.connector
 from mysql.connector import errorcode
 
 
-def connect_to_mysql():
+def connect_to_mysql() -> None:
     try:
         cnx = mysql.connector.connect(
             user="ai_helpdesk",
@@ -11,20 +11,21 @@ def connect_to_mysql():
             database="db_ai_helpdesk",
         )
         return cnx
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+    except mysql.connector.Error as e:
+        if e.errno == errorcode.ER_ACCESS_DENIED_ERROR:
             print("Something is wrong with your user name or password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+        elif e.errno == errorcode.ER_BAD_DB_ERROR:
             print("Database does not exist")
         else:
-            print(err)
+            print(e)
         return None
 
 
 def insert_ticket(title: str, content: str, summary: str, author_id: str) -> int:
     cnx = connect_to_mysql()
     if not cnx:
-        return {"error": "Database connection failed"}
+        print("Database connection failed")
+        raise RuntimeError("Database connection failed") from e
 
     cursor = cnx.cursor()
 
@@ -37,8 +38,9 @@ def insert_ticket(title: str, content: str, summary: str, author_id: str) -> int
 
         return ticket_id
 
-    except mysql.connector.Error as err:
-        raise RuntimeError(f"Database error: {err}")
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise RuntimeError(f"Database error: {e}") from e
 
     finally:
         cursor.close()
@@ -49,7 +51,7 @@ def insert_azure_user(user_id: str, user_name: str, user_group: str) -> None:
     cnx = connect_to_mysql()
     if not cnx:
         print("Database connection failed")
-        return None
+        raise RuntimeError("Database connection failed") from e
 
     cursor = cnx.cursor()
 
@@ -64,8 +66,9 @@ def insert_azure_user(user_id: str, user_name: str, user_group: str) -> None:
         cnx.commit()
         print("insert successful")
 
-    except mysql.connector.Error as err:
-        print(f"Database error: {err}")
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise RuntimeError(f"Database error: {e}") from e
 
     finally:
         cursor.close()
@@ -90,9 +93,9 @@ def is_azure_user_in_db(user_id: str) -> bool:
         print(result)
         return result is not None
 
-    except mysql.connector.Error as err:
-        print(f"Database error while checking Azure user: {err}")
-        return False
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise RuntimeError(f"Database error: {e}") from e
 
     finally:
         cursor.close()

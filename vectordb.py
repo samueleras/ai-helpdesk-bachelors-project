@@ -23,132 +23,147 @@ def _create_user_and_schema():
             "Error: Cannot access root. Root password has to remain default for initial start up."
         )
         return
-    ### Create User, Roles, and Privileges ###
-    if config["milvus"]["user"] in milvus_client.list_users():
-        milvus_client.drop_user(user_name=config["milvus"]["user"])
-    milvus_client.create_user(
-        user_name=config["milvus"]["user"], password=os.getenv("MILVUS_PASSWORD")
-    )
-    if "vector_db_rw" not in milvus_client.list_roles():
-        milvus_client.create_role(role_name="vector_db_rw")
-    milvus_client.grant_privilege(
-        role_name="vector_db_rw",
-        object_type="Collection",
-        privilege="*",
-        object_name="*",
-    )
-    milvus_client.grant_role(
-        user_name=config["milvus"]["user"], role_name="vector_db_rw"
-    )
-
-    ### Create Schema ###
-    if not milvus_client.has_collection(collection_name="collection_rag"):
-
-        schema = MilvusClient.create_schema(
-            auto_id=True,
-            enable_dynamic_field=False,
+    try:
+        ### Create User, Roles, and Privileges ###
+        if config["milvus"]["user"] in milvus_client.list_users():
+            milvus_client.drop_user(user_name=config["milvus"]["user"])
+        milvus_client.create_user(
+            user_name=config["milvus"]["user"], password=os.getenv("MILVUS_PASSWORD")
+        )
+        if "vector_db_rw" not in milvus_client.list_roles():
+            milvus_client.create_role(role_name="vector_db_rw")
+        milvus_client.grant_privilege(
+            role_name="vector_db_rw",
+            object_type="Collection",
+            privilege="*",
+            object_name="*",
+        )
+        milvus_client.grant_role(
+            user_name=config["milvus"]["user"], role_name="vector_db_rw"
         )
 
-        schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
-        schema.add_field(
-            field_name="embedding", datatype=DataType.FLOAT_VECTOR, dim=1024
-        )
-        schema.add_field(field_name="text", datatype=DataType.VARCHAR, max_length=10000)
-        schema.add_field(field_name="metadata", datatype=DataType.JSON)
+        ### Create Schema ###
+        if not milvus_client.has_collection(collection_name="collection_rag"):
 
-        index_params = milvus_client.prepare_index_params()
-
-        index_params.add_index(field_name="id", index_type="STL_SORT")
-
-        index_params.add_index(
-            field_name="embedding",
-            index_type=config["milvus"]["index_type_rag"],
-            metric_type=config["milvus"]["metric_type_rag"],
-        )
-
-        try:
-            milvus_client.create_collection(
-                collection_name="collection_rag",
-                schema=schema,
-                index_params=index_params,
+            schema = MilvusClient.create_schema(
+                auto_id=True,
+                enable_dynamic_field=False,
             )
-        except:
-            print("Collection already exists")
 
-        schema = MilvusClient.create_schema(
-            auto_id=False,
-            enable_dynamic_field=False,
-        )
-
-        schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
-        schema.add_field(
-            field_name="embedding", datatype=DataType.FLOAT_VECTOR, dim=1024
-        )
-        schema.add_field(field_name="title", datatype=DataType.VARCHAR, max_length=200)
-
-        index_params = milvus_client.prepare_index_params()
-
-        index_params.add_index(field_name="id", index_type="STL_SORT")
-
-        index_params.add_index(
-            field_name="embedding",
-            index_type=config["milvus"]["index_type_tickets"],
-            metric_type=config["milvus"]["metric_type_tickets"],
-        )
-
-        try:
-            milvus_client.create_collection(
-                collection_name="collection_ticket",
-                schema=schema,
-                index_params=index_params,
+            schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
+            schema.add_field(
+                field_name="embedding", datatype=DataType.FLOAT_VECTOR, dim=1024
             )
-        except:
-            print("Collection already exists")
+            schema.add_field(
+                field_name="text", datatype=DataType.VARCHAR, max_length=10000
+            )
+            schema.add_field(field_name="metadata", datatype=DataType.JSON)
+
+            index_params = milvus_client.prepare_index_params()
+
+            index_params.add_index(field_name="id", index_type="STL_SORT")
+
+            index_params.add_index(
+                field_name="embedding",
+                index_type=config["milvus"]["index_type_rag"],
+                metric_type=config["milvus"]["metric_type_rag"],
+            )
+
+            try:
+                milvus_client.create_collection(
+                    collection_name="collection_rag",
+                    schema=schema,
+                    index_params=index_params,
+                )
+            except:
+                print("Collection already exists")
+
+            schema = MilvusClient.create_schema(
+                auto_id=False,
+                enable_dynamic_field=False,
+            )
+
+            schema.add_field(field_name="id", datatype=DataType.INT64, is_primary=True)
+            schema.add_field(
+                field_name="embedding", datatype=DataType.FLOAT_VECTOR, dim=1024
+            )
+            schema.add_field(
+                field_name="title", datatype=DataType.VARCHAR, max_length=200
+            )
+
+            index_params = milvus_client.prepare_index_params()
+
+            index_params.add_index(field_name="id", index_type="STL_SORT")
+
+            index_params.add_index(
+                field_name="embedding",
+                index_type=config["milvus"]["index_type_tickets"],
+                metric_type=config["milvus"]["metric_type_tickets"],
+            )
+
+            try:
+                milvus_client.create_collection(
+                    collection_name="collection_ticket",
+                    schema=schema,
+                    index_params=index_params,
+                )
+            except:
+                print("Collection already exists")
+
+    except Exception as e:
+        print(f"Creating Milvus User and Collections failed: {e}")
+        raise RuntimeError(f"Creating Milvus User and Collections failed: {e}") from e
 
 
 def _initialize_directory(milvus_client: MilvusClient, directory: str):
-    res = milvus_client.query(
-        collection_name="collection_rag",
-        limit=1,
-        filter="id >= 0",
-    )
+    try:
+        res = milvus_client.query(
+            collection_name="collection_rag",
+            limit=1,
+            filter="id >= 0",
+        )
 
-    # Abort if there are already entries in the vector db
-    if res:
-        return
-
-    path = Path(directory)
-    pdf_files = list(path.glob("*.pdf"))
-
-    for file in pdf_files:
-        file_path = path / file
-        file_name = os.path.basename(file_path)
-        os.system(f'attrib -h "{file_path}"')
-        try:
-            reader = PdfReader(file_path)
-        except:
-            print("Error: File not readable.")
+        # Abort if there are already entries in the vector db
+        if res:
             return
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text()
-        text_splitter = RecursiveCharacterTextSplitter()
-        text_chunks = []
-        metadata_list = []
 
-        for text_chunk in text_splitter.split_text(text):
-            text_chunks.append(text_chunk)
-            metadata_list.append(file_name)
+        path = Path(directory)
+        pdf_files = list(path.glob("*.pdf"))
 
-        embeddings = embedding_model.embed_documents(text_chunks)
+        for file in pdf_files:
+            file_path = path / file
+            file_name = os.path.basename(file_path)
+            os.system(f'attrib -h "{file_path}"')
+            try:
+                reader = PdfReader(file_path)
+            except Exception as e:
+                print(f"Error on reading PDF file: {e}")
+                return
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text()
+            text_splitter = RecursiveCharacterTextSplitter()
+            text_chunks = []
+            metadata_list = []
 
-        data = [
-            {"embedding": embedding, "text": text, "metadata": metadata}
-            for embedding, text, metadata in zip(embeddings, text_chunks, metadata_list)
-        ]
+            for text_chunk in text_splitter.split_text(text):
+                text_chunks.append(text_chunk)
+                metadata_list.append(file_name)
 
-        res = milvus_client.insert(collection_name="collection_rag", data=data)
-        print(res)
+            embeddings = embedding_model.embed_documents(text_chunks)
+
+            data = [
+                {"embedding": embedding, "text": text, "metadata": metadata}
+                for embedding, text, metadata in zip(
+                    embeddings, text_chunks, metadata_list
+                )
+            ]
+
+            res = milvus_client.insert(collection_name="collection_rag", data=data)
+            print(res)
+    except Exception as e:
+        print(f"Milvus Directory Initialization failed: {e}")
+        raise RuntimeError(f"Milvus Directory Initialization failed: {e}") from e
 
 
 class DirectoryWatcher(FileSystemEventHandler):
@@ -187,42 +202,50 @@ class DirectoryWatcher(FileSystemEventHandler):
 
     def process_file(self, file_path: str) -> None:
         print(f"Processing file: {file_path}")
-        os.system(f'attrib -h "{file_path}"')
-        file_name = os.path.basename(file_path)
         try:
-            reader = PdfReader(file_path)
-        except:
-            print("Error: File not readable. Only pdf files are supported.")
-            return
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text()
-        text_splitter = RecursiveCharacterTextSplitter()
-        text_chunks = []
-        metadata_list = []
+            os.system(f'attrib -h "{file_path}"')
+            file_name = os.path.basename(file_path)
+            try:
+                reader = PdfReader(file_path)
+            except:
+                print("Error: File not readable. Only pdf files are supported.")
+                return
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text()
+            text_splitter = RecursiveCharacterTextSplitter()
+            text_chunks = []
+            metadata_list = []
 
-        for text_chunk in text_splitter.split_text(text):
-            text_chunks.append(text_chunk)
-            metadata_list.append(file_name)
+            for text_chunk in text_splitter.split_text(text):
+                text_chunks.append(text_chunk)
+                metadata_list.append(file_name)
 
-        embeddings = embedding_model.embed_documents(text_chunks)
+            embeddings = embedding_model.embed_documents(text_chunks)
 
-        data = [
-            {"embedding": embedding, "text": text, "metadata": metadata}
-            for embedding, text, metadata in zip(embeddings, text_chunks, metadata_list)
-        ]
+            data = [
+                {"embedding": embedding, "text": text, "metadata": metadata}
+                for embedding, text, metadata in zip(
+                    embeddings, text_chunks, metadata_list
+                )
+            ]
 
-        res = milvus_client.insert(collection_name="collection_rag", data=data)
-        print(res)
+            res = milvus_client.insert(collection_name="collection_rag", data=data)
+            print(res)
+        except Exception as e:
+            print(f"Processing PDF File failed: {e}")
 
     def delete_vectors(self, file_path: str) -> None:
         print(f"Deleting vectors for file: {file_path}")
-        file_name = os.path.basename(file_path)
-        res = milvus_client.delete(
-            collection_name="collection_rag",
-            filter=f'metadata == "{file_name}"',
-        )
-        print(res)
+        try:
+            file_name = os.path.basename(file_path)
+            res = milvus_client.delete(
+                collection_name="collection_rag",
+                filter=f'metadata == "{file_name}"',
+            )
+            print(res)
+        except Exception as e:
+            print(f"Processing PDF File failed: {e}")
 
 
 def _watch_directory(milvus_client: MilvusClient, directory: str) -> None:
@@ -248,74 +271,90 @@ def initialize_milvus(config_file: AppConfig):
 
     print("Initiating Milvus DB connection...")
 
-    while not milvus_client and attempts < 3:
-        try:
-            milvus_client = MilvusClient(
-                uri=config["milvus"]["host"],
-                token=config["milvus"]["user"] + ":" + os.getenv("MILVUS_PASSWORD"),
-            )
-            print("Load available Collections:", milvus_client.list_collections())
-            milvus_client.load_collection(collection_name="collection_rag")
-            milvus_client.load_collection(collection_name="collection_ticket")
-        except:
-            print(
-                "Creating user or adjusting password and creating schema if it does not exist."
-            )
-            _create_user_and_schema()
-        attempts += 1
+    try:
+        while not milvus_client and attempts < 3:
+            try:
+                milvus_client = MilvusClient(
+                    uri=config["milvus"]["host"],
+                    token=config["milvus"]["user"] + ":" + os.getenv("MILVUS_PASSWORD"),
+                )
+                print("Load available Collections:", milvus_client.list_collections())
+                milvus_client.load_collection(collection_name="collection_rag")
+                milvus_client.load_collection(collection_name="collection_ticket")
+            except Exception as e:
+                print(f"Error on loading collections {e}")
+                print(
+                    "Creating user or adjusting password and creating schema if it does not exist."
+                )
+                _create_user_and_schema()
+            attempts += 1
 
-    if not milvus_client:
-        raise ConnectionError("Connecting to Milvus failed.")
-    # Clear whole vector db
-    """ try:
-        result = milvus_client.delete(
-            collection_name="collection_rag", filter="id >= 0"
+        if not milvus_client:
+            raise ConnectionError("Connecting to Milvus failed.")
+        # Clear whole vector db
+        """ try:
+            result = milvus_client.delete(
+                collection_name="collection_rag", filter="id >= 0"
+            )
+            print(f"Deletion result: {result}")
+        except Exception as e:
+            print(f"Error during deletion: {e}") """
+        _initialize_directory(
+            milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
         )
-        print(f"Deletion result: {result}")
+        watcher_thread = threading.Thread(
+            target=_watch_directory,
+            args=(
+                milvus_client,
+                config["milvus"]["rag_documents_folder_absolute_path"],
+            ),
+            daemon=True,
+        )
+        watcher_thread.start()
     except Exception as e:
-        print(f"Error during deletion: {e}") """
-    _initialize_directory(
-        milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
-    )
-    watcher_thread = threading.Thread(
-        target=_watch_directory,
-        args=(
-            milvus_client,
-            config["milvus"]["rag_documents_folder_absolute_path"],
-        ),
-        daemon=True,
-    )
-    watcher_thread.start()
+        print(f"Milvus initialization failed: {e}")
+        raise RuntimeError(f"Milvus initialization failed: {e}") from e
 
 
 def retrieve_documents_milvus(query: str) -> List[dict]:
-    query_vector = embedding_model.embed_query(query)
-    return milvus_client.search(
-        collection_name="collection_rag",
-        anns_field="embedding",
-        data=[query_vector],
-        limit=config["milvus"]["number_of_retrieved_documents"],
-        search_params={"metric_type": config["milvus"]["metric_type_rag"]},
-        output_fields=["text", "metadata"],
-    )[0]
+    try:
+        query_vector = embedding_model.embed_query(query)
+        return milvus_client.search(
+            collection_name="collection_rag",
+            anns_field="embedding",
+            data=[query_vector],
+            limit=config["milvus"]["number_of_retrieved_documents"],
+            search_params={"metric_type": config["milvus"]["metric_type_rag"]},
+            output_fields=["text", "metadata"],
+        )[0]
+    except Exception as e:
+        print(f"Document retrieval failed: {e}")
+        return []
 
 
 def store_ticket_milvus(ticket: Ticket) -> None:
+    try:
+        embedding = embedding_model.embed_documents(ticket["summary"])
 
-    embedding = embedding_model.embed_documents(ticket["summary"])
+        data = [{"id": ticket["id"], "embedding": embedding, "title": ticket["title"]}]
 
-    data = [{"id": ticket["id"], "embedding": embedding, "title": ticket["title"]}]
-
-    milvus_client.insert(collection_name="collection_ticket", data=data)
+        milvus_client.insert(collection_name="collection_ticket", data=data)
+    except Exception as e:
+        print(f"Storing ticket in Milvus failed: {e}")
+        return None
 
 
 def retrieve_similar_tickets_milvus(ticket: Ticket) -> List[dict]:
-    query_vector = embedding_model.embed_query(ticket["summary"])
-    return milvus_client.search(
-        collection_name="collection_ticket",
-        anns_field="embedding",
-        data=[query_vector],
-        limit=5,
-        search_params={"metric_type": "COSINE"},
-        output_fields=["title"],
-    )[0]
+    try:
+        query_vector = embedding_model.embed_query(ticket["summary"])
+        return milvus_client.search(
+            collection_name="collection_ticket",
+            anns_field="embedding",
+            data=[query_vector],
+            limit=5,
+            search_params={"metric_type": "COSINE"},
+            output_fields=["title"],
+        )[0]
+    except Exception as e:
+        print(f"Retrieving similar tickets failed: {e}")
+        return []

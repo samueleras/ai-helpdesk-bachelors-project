@@ -148,9 +148,11 @@ async def read_users_me(user: Annotated[User, Depends(get_current_user_with_grou
         if groupid == TECHNICIANS_GROUP_ID:
             groups.append("technicians")
     user.groups = groups
-    if not is_azure_user_in_db(user.user_id):
-        print("Insert azure user in db: ", user.user_id, user.user_name, user.groups[0])
-        insert_azure_user(user.user_id, user.user_name, user.groups[0])
+    try:
+        if not is_azure_user_in_db(user.user_id):
+            insert_azure_user(user.user_id, user.user_name, user.groups[0])
+    except Exception:
+        raise HTTPException(status_code=500, detail="Storing user data failed")
     return user
 
 
@@ -183,12 +185,9 @@ async def init_ai_workflow(
         response: WorkflowResponse = await langchain_model.initiate_workflow_async(
             conversation, query_prompt, ticket, excecution_count
         )
-    except RuntimeError as e:
-        raise HTTPException(
-            status_code=500, detail=f"Workflow execution failed: {str(e)}"
-        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        print(f"Workflow execution failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Workflow execution failed")
 
     # If a ticket was generated, store it in the database and return the ID
     if response["ticket_content"]:
@@ -211,12 +210,8 @@ async def init_ai_workflow(
                 ticket_id = insert_ticket(title, content, summary, user_id)
                 return {"ticket_id": ticket_id, "ticket_content": content}
 
-            except json.JSONDecodeError as e:
-                print(f"JSON parsing error on attempt {attempts + 1}: {e}")
-            except mysql.connector.Error as e:
-                print(f"Database error on attempt {attempts + 1}: {e}")
             except Exception as e:
-                print(f"Unexpected error on attempt {attempts + 1}: {e}")
+                print(f"Error on attempt {attempts + 1}: {e}")
 
             attempts += 1
 

@@ -284,7 +284,7 @@ def initialize_langchain(config: AppConfig):
             }
         except Exception as e:
             print(f"ERROR in generate_ticket: {str(e)}")
-            raise RuntimeError(f"Ticket generation failed: {str(e)}")
+            raise RuntimeError(f"Ticket generation failed: {str(e)}") from e
 
     # Graph
     workflow = StateGraph(GraphState)
@@ -414,6 +414,6 @@ def initialize_langchain(config: AppConfig):
             return response
         except Exception as e:
             print(f"ERROR in initiate_workflow: {str(e)}")
-            raise RuntimeError(f"Workflow failed: {str(e)}")
+            raise RuntimeError(f"ERROR in initiate_workflow: {str(e)}") from e
 
     return LangChainModel(initiate_workflow_async)
