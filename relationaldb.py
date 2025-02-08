@@ -8,7 +8,7 @@ def connect_to_mysql():
             user="ai_helpdesk",
             password="test1234",
             host="127.0.0.1",
-            database="db_ai_helpdeskai_helpdesk",
+            database="db_ai_helpdesk",
         )
         return cnx
     except mysql.connector.Error as err:
@@ -48,7 +48,8 @@ def insert_ticket(title: str, content: str, summary: str, author_id: str) -> int
 def insert_azure_user(user_id: str, user_name: str, user_group: str) -> None:
     cnx = connect_to_mysql()
     if not cnx:
-        return {"error": "Database connection failed"}
+        print("Database connection failed")
+        return None
 
     cursor = cnx.cursor()
 
@@ -61,14 +62,16 @@ def insert_azure_user(user_id: str, user_name: str, user_group: str) -> None:
         )
         cursor.execute(query, values)
         cnx.commit()
-        return None
+        print("insert successful")
 
     except mysql.connector.Error as err:
-        return {"error": str(err)}
+        print(f"Database error: {err}")
 
     finally:
         cursor.close()
         cnx.close()
+
+    return None
 
 
 def is_azure_user_in_db(user_id: str) -> bool:
@@ -77,13 +80,14 @@ def is_azure_user_in_db(user_id: str) -> bool:
         return {"error": "Database connection failed"}
 
     cursor = cnx.cursor()
-
+    print("checking for user")
     try:
         query = "SELECT user_id FROM azure_users WHERE user_id = %s"
         values = (user_id,)
         cursor.execute(query, values)
 
         result = cursor.fetchone()
+        print(result)
         return result is not None
 
     except mysql.connector.Error as err:

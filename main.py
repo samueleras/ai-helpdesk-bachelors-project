@@ -13,10 +13,10 @@ from pydantic_models import User, WorkflowRequestModel
 from utils import load_json
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2AuthorizationCodeBearer
-from typing import Annotated, Callable, Dict
+from typing import Annotated, Callable
 import requests
 import jwt
-from relationaldb import insert_ticket
+from relationaldb import insert_ticket, insert_azure_user, is_azure_user_in_db
 
 # Load environment variables
 load_dotenv()
@@ -148,6 +148,9 @@ async def read_users_me(user: Annotated[User, Depends(get_current_user_with_grou
         if groupid == TECHNICIANS_GROUP_ID:
             groups.append("technicians")
     user.groups = groups
+    if not is_azure_user_in_db(user.user_id):
+        print("Insert azure user in db: ", user.user_id, user.user_name, user.groups[0])
+        insert_azure_user(user.user_id, user.user_name, user.groups[0])
     return user
 
 
