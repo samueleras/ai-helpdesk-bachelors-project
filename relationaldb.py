@@ -43,3 +43,25 @@ def insert_ticket(title: str, content: str, summary: str, author_id: str) -> int
     finally:
         cursor.close()
         cnx.close()
+
+
+def insert_azure_user(user_id: str, user_name: str, user_group: str) -> None:
+    cnx = connect_to_mysql()
+    if not cnx:
+        return {"error": "Database connection failed"}
+
+    cursor = cnx.cursor()
+
+    try:
+        query = "INSERT INTO azure_users (user_id, user_name, user_group) VALUES (%s, %s, %s)"
+        values = (user_id, user_name, user_group)
+        cursor.execute(query, values)
+        cnx.commit()
+        return None
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+
+    finally:
+        cursor.close()
+        cnx.close()
