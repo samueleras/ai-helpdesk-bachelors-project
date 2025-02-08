@@ -54,13 +54,41 @@ def insert_azure_user(user_id: str, user_name: str, user_group: str) -> None:
 
     try:
         query = "INSERT INTO azure_users (user_id, user_name, user_group) VALUES (%s, %s, %s)"
-        values = (user_id, user_name, user_group)
+        values = (
+            user_id,
+            user_name,
+            user_group,
+        )
         cursor.execute(query, values)
         cnx.commit()
         return None
 
     except mysql.connector.Error as err:
         return {"error": str(err)}
+
+    finally:
+        cursor.close()
+        cnx.close()
+
+
+def is_azure_user_in_db(user_id: str) -> bool:
+    cnx = connect_to_mysql()
+    if not cnx:
+        return {"error": "Database connection failed"}
+
+    cursor = cnx.cursor()
+
+    try:
+        query = "SELECT user_id FROM azure_users WHERE user_id = %s"
+        values = (user_id,)
+        cursor.execute(query, values)
+
+        result = cursor.fetchone()
+        return result is not None
+
+    except mysql.connector.Error as err:
+        print(f"Database error while checking Azure user: {err}")
+        return False
 
     finally:
         cursor.close()
