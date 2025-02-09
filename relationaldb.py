@@ -5,6 +5,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from custom_types import AppConfig, Ticket, TicketConversation
 from vectordb import retrieve_similar_tickets_milvus
+from pydantic_models import User
 
 
 def connect_to_mysql(config: AppConfig) -> None:
@@ -82,7 +83,7 @@ def get_ticket_conversation(
         cnx.close()
 
 
-def get_ticket(ticket_id: int, group: str, config: AppConfig) -> Ticket:
+def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
     cnx = connect_to_mysql(config)
     try:
         cursor = cnx.cursor()
@@ -91,12 +92,19 @@ def get_ticket(ticket_id: int, group: str, config: AppConfig) -> Ticket:
         cursor.execute(query, (ticket_id,))
         ticket = cursor.fetchone()
 
+        # Only allow the request for the ticket author and technicians
+        if user.user_id != ticket["author_id"]:
+            if user.group != "technician":
+                raise PermissionError(
+                    f"Unauthorized ticket access. User is not the ticket author or part of the technicians group."
+                ) from e
+
         ticket["similar_tickets"] = []
         if "summary_vector" in ticket:
             # Convert JSON string back to vector list
             ticket["summary_vector"] = json.loads(ticket["summary_vector"])
             # Retrieve similar tickets from vector store based on the summary vector
-            if group == "technician":
+            if user.group == "technician":
                 similar_tickets = retrieve_similar_tickets_milvus(
                     ticket["summary_vector"]
                 )
@@ -107,6 +115,9 @@ def get_ticket(ticket_id: int, group: str, config: AppConfig) -> Ticket:
 
         return ticket
 
+    except PermissionError as e:
+        print(f"Ticket access error: {e}")
+        raise PermissionError from e
     except Exception as e:
         print(f"Database error: {e}")
         raise RuntimeError(f"Database error: {e}") from e

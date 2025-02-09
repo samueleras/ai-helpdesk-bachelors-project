@@ -217,6 +217,11 @@ async def init_ai_workflow(data: WorkflowRequestModel):
 
 @app.get("/ticket/{id}")
 async def get_ticket_by_id(id: int):
-    ticket = get_ticket(id, "technician", config)
-    print(ticket)
-    return ticket
+    try:
+        ticket = get_ticket(id, "technician", config)
+        print(ticket)
+        return ticket
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to retrieve ticket")
