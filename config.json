@@ -15,5 +15,10 @@
     "index_type_tickets": "AUTOINDEX",
     "number_of_retrieved_documents": 3,
     "rag_documents_folder_absolute_path": "E:\\SynologyDrive\\Dateien\\VSCodeProjects\\Dissertation\\ai-helpdesk-bachelors-project\\rag_documents"
+  },
+  "mysql": {
+    "user": "aihelpdesk",
+    "host": "127.0.0.1",
+    "database": "db_ai_helpdesk"
   }
 }

@@ -22,10 +22,17 @@ class MilvusConfig(TypedDict):
     rag_documents_folder_absolute_path: str
 
 
+class MySqlConfig(TypedDict):
+    user: str
+    host: str
+    database: str
+
+
 class AppConfig(TypedDict):
     ollama: OllamaConfig
     workflow: WorkflowConfig
     milvus: MilvusConfig
+    mysql: MySqlConfig
 
 
 class WorkflowRequest(TypedDict):
