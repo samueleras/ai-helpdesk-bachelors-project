@@ -3,7 +3,8 @@ import os
 from typing import List
 import mysql.connector
 from mysql.connector import errorcode
-from custom_types import AppConfig
+from custom_types import AppConfig, Ticket, TicketConversation
+from vectordb import retrieve_similar_tickets_milvus
 
 
 def connect_to_mysql(config: AppConfig) -> None:
@@ -42,13 +43,35 @@ def insert_ticket(
         cursor = cnx.cursor()
         summary_json = json.dumps(summary_vector)
 
-        query = "INSERT INTO tickets (title, content, summary_vector, author_id) VALUES (%s, %s, %s)"
+        query = "INSERT INTO tickets (title, content, summary_vector, author_id) VALUES (%s, %s, %s, %s)"
         values = (title, content, summary_json, author_id)
         cursor.execute(query, values)
         cnx.commit()
         ticket_id = cursor.lastrowid  # Get auto-generated ticket_id
 
         return ticket_id
+
+    except Exception as e:
+        print(f"Database error on ticket insert: {e}")
+        raise RuntimeError(f"Database error ticket insert: {e}") from e
+
+    finally:
+        cursor.close()
+        cnx.close()
+
+
+def get_ticket_conversation(
+    ticket_id: int, config: AppConfig
+) -> List[TicketConversation]:
+    cnx = connect_to_mysql(config)
+    try:
+        cursor = cnx.cursor(dictionary=True)
+
+        query = "SELECT * FROM ticket_conversations WHERE ticket_id = %s ORDER BY created_at ASC"
+        cursor.execute(query, (ticket_id,))
+        conversations = cursor.fetchall() or []
+
+        return conversations
 
     except Exception as e:
         print(f"Database error: {e}")
