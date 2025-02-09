@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 import mysql.connector
-from vectordb import initialize_milvus
+from vectordb import initialize_milvus, store_ticket_milvus, embed_summary
 from ai_system import initialize_langchain
 from custom_types import WorkflowResponse, AppConfig
 from dotenv import load_dotenv
@@ -206,8 +206,15 @@ async def init_ai_workflow(
                 content = json.dumps(response["ticket_content"])
                 summary = json.dumps(response["ticket_summary"])
 
+                summary_vector = embed_summary(summary)
+
                 # Store ticket in DB
-                ticket_id = insert_ticket(title, content, summary, user_id, config)
+                ticket_id = insert_ticket(
+                    title, content, summary_vector, user_id, config
+                )
+
+                store_ticket_milvus(ticket_id, summary_vector, title)
+
                 return {"ticket_id": ticket_id, "ticket_content": content}
 
             except Exception as e:

@@ -1,4 +1,5 @@
 import os
+from typing import List
 import mysql.connector
 from mysql.connector import errorcode
 from custom_types import AppConfig
@@ -28,7 +29,11 @@ def connect_to_mysql(config: AppConfig) -> None:
 
 
 def insert_ticket(
-    title: str, content: str, summary: str, author_id: str, config: AppConfig
+    title: str,
+    content: str,
+    summary_vector: List[float],
+    author_id: str,
+    config: AppConfig,
 ) -> int:
     cnx = connect_to_mysql(config)
 
@@ -36,7 +41,7 @@ def insert_ticket(
 
     try:
         query = "INSERT INTO tickets (title, content, summary, author_id) VALUES (%s, %s, %s)"
-        values = (title, content, summary, author_id)
+        values = (title, content, summary_vector, author_id)
         cursor.execute(query, values)
         cnx.commit()
         ticket_id = cursor.lastrowid  # Get auto-generated ticket_id

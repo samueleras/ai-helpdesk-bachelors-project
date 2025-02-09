@@ -336,21 +336,32 @@ def retrieve_documents_milvus(query: str) -> List[dict]:
         return []
 
 
-def store_ticket_milvus(ticket: Ticket) -> None:
+def embed_summary(summary: str) -> List[float]:
     attempts = 0
     while attempts < 3:
         try:
-            embedding = embedding_model.embed_documents(ticket["summary"])
+            embedding = embedding_model.embed_documents(summary)
+            print(embedding)
+            return embedding
+        except Exception as e:
+            attempts += 1
+            print(f"Creating Summary Embedding failed on attempt {attempts + 1}: {e}")
+    raise RuntimeError(f"Failed to embed summary: {e}") from e
 
+
+def store_ticket_milvus(
+    ticket_id: int, summary_vector: List[float], ticket_title: str
+) -> None:
+    attempts = 0
+    while attempts < 3:
+        try:
             data = [
-                {"id": ticket["id"], "embedding": embedding, "title": ticket["title"]}
+                {"id": ticket_id, "embedding": summary_vector, "title": ticket_title}
             ]
-
             milvus_client.insert(collection_name="collection_ticket", data=data)
         except Exception as e:
             attempts += 1
             print(f"Storing ticket in Milvus failed: {e}")
-            return None
 
 
 def retrieve_similar_tickets_milvus(ticket: Ticket) -> List[dict]:
