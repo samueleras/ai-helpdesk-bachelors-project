@@ -337,15 +337,20 @@ def retrieve_documents_milvus(query: str) -> List[dict]:
 
 
 def store_ticket_milvus(ticket: Ticket) -> None:
-    try:
-        embedding = embedding_model.embed_documents(ticket["summary"])
+    attempts = 0
+    while attempts < 3:
+        try:
+            embedding = embedding_model.embed_documents(ticket["summary"])
 
-        data = [{"id": ticket["id"], "embedding": embedding, "title": ticket["title"]}]
+            data = [
+                {"id": ticket["id"], "embedding": embedding, "title": ticket["title"]}
+            ]
 
-        milvus_client.insert(collection_name="collection_ticket", data=data)
-    except Exception as e:
-        print(f"Storing ticket in Milvus failed: {e}")
-        return None
+            milvus_client.insert(collection_name="collection_ticket", data=data)
+        except Exception as e:
+            attempts += 1
+            print(f"Storing ticket in Milvus failed: {e}")
+            return None
 
 
 def retrieve_similar_tickets_milvus(ticket: Ticket) -> List[dict]:
