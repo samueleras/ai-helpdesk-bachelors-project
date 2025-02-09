@@ -341,8 +341,7 @@ def embed_summary(summary: str) -> List[float]:
     while attempts < 3:
         try:
             embedding = embedding_model.embed_documents(summary)
-            print(embedding)
-            return embedding
+            return embedding[0]
         except Exception as e:
             attempts += 1
             print(f"Creating Summary Embedding failed on attempt {attempts + 1}: {e}")
@@ -355,22 +354,23 @@ def store_ticket_milvus(
     attempts = 0
     while attempts < 3:
         try:
+            print("Try to store ticket in milvus")
             data = [
                 {"id": ticket_id, "embedding": summary_vector, "title": ticket_title}
             ]
             milvus_client.insert(collection_name="collection_ticket", data=data)
+            return
         except Exception as e:
             attempts += 1
-            print(f"Storing ticket in Milvus failed: {e}")
+            print(f"Storing ticket in Milvus failed on attempt {attempts + 1}: {e}")
 
 
-def retrieve_similar_tickets_milvus(ticket: Ticket) -> List[dict]:
+def retrieve_similar_tickets_milvus(summary_vector: List[float]) -> List[dict]:
     try:
-        query_vector = embedding_model.embed_query(ticket["summary"])
         return milvus_client.search(
             collection_name="collection_ticket",
             anns_field="embedding",
-            data=[query_vector],
+            data=[summary_vector],
             limit=5,
             search_params={"metric_type": "COSINE"},
             output_fields=["title"],
