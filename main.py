@@ -149,8 +149,8 @@ async def read_users_me(user: Annotated[User, Depends(get_current_user_with_grou
             groups.append("technicians")
     user.groups = groups
     try:
-        if not is_azure_user_in_db(user.user_id):
-            insert_azure_user(user.user_id, user.user_name, user.groups[0])
+        if not is_azure_user_in_db(user.user_id, config):
+            insert_azure_user(user.user_id, user.user_name, user.groups[0], config)
     except Exception:
         raise HTTPException(status_code=500, detail="Storing user data failed")
     return user
@@ -207,7 +207,7 @@ async def init_ai_workflow(
                 summary = json.dumps(response["ticket_summary"])
 
                 # Store ticket in DB
-                ticket_id = insert_ticket(title, content, summary, user_id)
+                ticket_id = insert_ticket(title, content, summary, user_id, config)
                 return {"ticket_id": ticket_id, "ticket_content": content}
 
             except Exception as e:
