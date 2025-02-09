@@ -213,3 +213,10 @@ async def init_ai_workflow(data: WorkflowRequestModel):
         )
 
     return response
+
+
+@app.get("/ticket/{id}")
+async def get_ticket_by_id(id: int):
+    ticket = get_ticket(id, "technician", config)
+    print(ticket)
+    return ticket
