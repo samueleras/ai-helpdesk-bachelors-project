@@ -82,6 +82,40 @@ def get_ticket_conversation(
         cnx.close()
 
 
+def get_ticket(ticket_id: int, group: str, config: AppConfig) -> Ticket:
+    cnx = connect_to_mysql(config)
+    try:
+        cursor = cnx.cursor()
+
+        query = "SELECT * FROM tickets WHERE ticket_id = %s"
+        cursor.execute(query, (ticket_id,))
+        ticket = cursor.fetchone()
+
+        ticket["similar_tickets"] = []
+        if "summary_vector" in ticket:
+            # Convert JSON string back to vector list
+            ticket["summary_vector"] = json.loads(ticket["summary_vector"])
+            # Retrieve similar tickets from vector store based on the summary vector
+            if group == "technician":
+                similar_tickets = retrieve_similar_tickets_milvus(
+                    ticket["summary_vector"]
+                )
+                print("Similar tickets", similar_tickets)
+                ticket["similar_tickets"] = similar_tickets
+
+        ticket["ticket_conversation"] = get_ticket_conversation(ticket_id, config)
+
+        return ticket
+
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise RuntimeError(f"Database error: {e}") from e
+
+    finally:
+        cursor.close()
+        cnx.close()
+
+
 def insert_azure_user(
     user_id: str, user_name: str, user_group: str, config: AppConfig
 ) -> None:
