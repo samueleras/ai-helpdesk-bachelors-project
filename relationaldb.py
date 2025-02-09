@@ -1,3 +1,4 @@
+import json
 import os
 from typing import List
 import mysql.connector
@@ -37,11 +38,12 @@ def insert_ticket(
 ) -> int:
     cnx = connect_to_mysql(config)
 
-    cursor = cnx.cursor()
-
     try:
-        query = "INSERT INTO tickets (title, content, summary, author_id) VALUES (%s, %s, %s)"
-        values = (title, content, summary_vector, author_id)
+        cursor = cnx.cursor()
+        summary_json = json.dumps(summary_vector)
+
+        query = "INSERT INTO tickets (title, content, summary_vector, author_id) VALUES (%s, %s, %s)"
+        values = (title, content, summary_json, author_id)
         cursor.execute(query, values)
         cnx.commit()
         ticket_id = cursor.lastrowid  # Get auto-generated ticket_id
