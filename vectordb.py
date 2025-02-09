@@ -237,15 +237,19 @@ class DirectoryWatcher(FileSystemEventHandler):
 
     def delete_vectors(self, file_path: str) -> None:
         print(f"Deleting vectors for file: {file_path}")
-        try:
-            file_name = os.path.basename(file_path)
-            res = milvus_client.delete(
-                collection_name="collection_rag",
-                filter=f'metadata == "{file_name}"',
-            )
-            print(res)
-        except Exception as e:
-            print(f"Processing PDF File failed: {e}")
+        attempts = 0
+        while attempts < 3:
+            try:
+                file_name = os.path.basename(file_path)
+                res = milvus_client.delete(
+                    collection_name="collection_rag",
+                    filter=f'metadata == "{file_name}"',
+                )
+                print(res)
+                return
+            except Exception as e:
+                attempts += 1
+                print(f"Processing PDF File failed: {e}")
 
 
 def _watch_directory(milvus_client: MilvusClient, directory: str) -> None:
