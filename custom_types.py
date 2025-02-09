@@ -66,15 +66,9 @@ class GraphState(TypedDict):
     excecution_count: int
 
 
-class Ticket(TypedDict):
+class SimilarTicket(TypedDict):
     ticket_id: int
     title: str
-    content: str
-    summary: Optional[str]
-    creation_date: datetime
-    closed_date: Optional[datetime]
-    user_id: str
-    assignee_id: Optional[str]
 
 
 class TicketConversation(TypedDict):
@@ -83,3 +77,16 @@ class TicketConversation(TypedDict):
     author_id: str
     message: str
     created_at: datetime
+
+
+class Ticket(TypedDict):
+    ticket_id: int
+    title: str
+    content: str
+    summary_vector: Optional[List[float]]
+    creation_date: datetime
+    closed_date: Optional[datetime]
+    author_id: str
+    assignee_id: Optional[str]
+    similar_tickets: Optional[List[SimilarTicket]]
+    ticket_conversation: Optional[List[TicketConversation]]
