@@ -92,32 +92,19 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
         cursor.execute(query, (ticket_id,))
         ticket = cursor.fetchone()
 
-        # Only allow the request for the ticket author and technicians
-        if user.user_id != ticket["author_id"]:
-            if user.group != "technician":
-                raise PermissionError(
-                    f"Unauthorized ticket access. User is not the ticket author or part of the technicians group."
-                ) from e
-
         ticket["similar_tickets"] = []
-        if "summary_vector" in ticket:
+        if "summary_vector" in ticket and user.group == "technician":
             # Convert JSON string back to vector list
             ticket["summary_vector"] = json.loads(ticket["summary_vector"])
             # Retrieve similar tickets from vector store based on the summary vector
-            if user.group == "technician":
-                similar_tickets = retrieve_similar_tickets_milvus(
-                    ticket["summary_vector"]
-                )
-                print("Similar tickets", similar_tickets)
-                ticket["similar_tickets"] = similar_tickets
+            similar_tickets = retrieve_similar_tickets_milvus(ticket["summary_vector"])
+            print("Similar tickets", similar_tickets)
+            ticket["similar_tickets"] = similar_tickets
 
         ticket["ticket_conversation"] = get_ticket_conversation(ticket_id, config)
 
         return ticket
 
-    except PermissionError as e:
-        print(f"Ticket access error: {e}")
-        raise PermissionError from e
     except Exception as e:
         print(f"Database error: {e}")
         raise RuntimeError(f"Database error: {e}") from e

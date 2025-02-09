@@ -216,10 +216,17 @@ async def init_ai_workflow(data: WorkflowRequestModel):
 
 
 @app.get("/ticket/{id}")
-async def get_ticket_by_id(id: int):
+async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int):
     try:
-        ticket = get_ticket(id, "technician", config)
+        ticket = get_ticket(id, user, config)
         print(ticket)
+        # Only allow the request for the ticket author and technicians
+        if user.user_id != ticket["author_id"]:
+            if user.group != "technician":
+                print(
+                    "Unauthorized ticket access. User is not the ticket author or part of the technicians group."
+                )
+                raise PermissionError
         return ticket
     except PermissionError as e:
         raise HTTPException(status_code=403, detail="Unauthorized access")
