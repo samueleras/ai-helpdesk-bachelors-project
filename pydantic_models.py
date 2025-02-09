@@ -13,4 +13,4 @@ class User(BaseModel):
     user_id: str
     user_name: str
     email: str
-    groups: List[str]
+    group: str
