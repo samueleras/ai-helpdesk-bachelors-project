@@ -231,3 +231,17 @@ async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int
         raise HTTPException(status_code=403, detail="Unauthorized access")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to retrieve ticket")
+
+
+@app.get("/technicians")
+async def get_technicians(
+    user: Annotated[User, Depends(check_user_group("technicians"))]
+):
+    try:
+        technicians = get_technicians(config)
+        print(technicians)
+        return technicians
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to retrieve technicians")

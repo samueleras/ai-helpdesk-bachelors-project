@@ -88,3 +88,8 @@ class Ticket(TypedDict):
     assignee_name: Optional[str]
     similar_tickets: Optional[List[SimilarTicket]]
     ticket_conversation: Optional[List[TicketConversation]]
+
+
+class Technician(TypedDict):
+    user_id: str
+    user_name: str

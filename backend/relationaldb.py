@@ -3,7 +3,7 @@ import os
 from typing import List
 import mysql.connector
 from mysql.connector import errorcode
-from custom_types import AppConfig, Ticket, TicketConversation
+from custom_types import AppConfig, Technician, Ticket, TicketConversation
 from ai_system.vectordb import retrieve_similar_tickets_milvus
 from backend.pydantic_models import User
 
@@ -106,6 +106,26 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
         ticket["ticket_conversation"] = get_ticket_conversation(ticket_id, config)
 
         return ticket
+
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise RuntimeError(f"Database error: {e}") from e
+
+    finally:
+        cursor.close()
+        cnx.close()
+
+
+def get_technicians(config: AppConfig) -> List[Technician]:
+    cnx = connect_to_mysql(config)
+    try:
+        cursor = cnx.cursor(dictionary=True)
+
+        query = "SELECT user_id, user_name FROM azure_users WHERE group = 'technician'"
+        cursor.execute(query)
+        technicians = cursor.fetchall()
+
+        return technicians
 
     except Exception as e:
         print(f"Database error: {e}")
