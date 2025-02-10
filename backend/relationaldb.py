@@ -5,7 +5,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from custom_types import AppConfig, Ticket, TicketConversation
 from ai_system.vectordb import retrieve_similar_tickets_milvus
-from pydantic_models import User
+from backend.pydantic_models import User
 
 
 def connect_to_mysql(config: AppConfig) -> None:

@@ -5,17 +5,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from ai_system.vectordb import initialize_milvus, store_ticket_milvus, embed_summary
-from ai_system import initialize_langchain
+from ai_system.ai_system import initialize_langchain
 from custom_types import WorkflowResponse, AppConfig
 from dotenv import load_dotenv
-from pydantic_models import User, WorkflowRequestModel
+from backend.pydantic_models import User, WorkflowRequestModel
 from utils import load_json
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from typing import Annotated, Callable
 import requests
 import jwt
-from relationaldb import (
+from backend.relationaldb import (
     insert_ticket,
     insert_azure_user,
     is_azure_user_in_db,
@@ -26,7 +26,7 @@ from relationaldb import (
 load_dotenv()
 
 # Import necessary modules
-app_path = os.path.dirname(os.path.abspath(__file__))
+app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Load configuration
 config: AppConfig = load_json(os.path.join(app_path, "config.json"))
@@ -66,7 +66,7 @@ app.add_middleware(
 # Define static directory to serve frontend files
 app.mount(
     "/static",
-    StaticFiles(directory=os.path.join(app_path, "static"), html=True),
+    StaticFiles(directory=os.path.join(app_path, "frontend/static"), html=True),
     name="frontend",
 )
 

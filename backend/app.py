@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import json
 import os
-from vectordb import initialize_milvus
-from ai_system import initialize_langchain
+from ai_system.vectordb import initialize_milvus
+from ai_system.ai_system import initialize_langchain
 from custom_types import WorkflowResponse, AppConfig
 from dotenv import load_dotenv
 from pydantic import ValidationError

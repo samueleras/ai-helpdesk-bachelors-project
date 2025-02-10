@@ -8,7 +8,7 @@ from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from PyPDF2 import PdfReader
 from pathlib import Path
 import threading
-from custom_types import AppConfig, Ticket
+from custom_types import AppConfig
 
 observer_started = False
 

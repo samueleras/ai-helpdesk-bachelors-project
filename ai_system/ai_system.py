@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import dataclass
 import os
 from typing import Callable, List, Tuple
-from vectordb import retrieve_documents_milvus
+from ai_system.vectordb import retrieve_documents_milvus
 from langchain_ollama import ChatOllama
 from langgraph.graph import START, END, StateGraph
 from langchain_core.messages.system import SystemMessage
@@ -11,7 +11,7 @@ import uuid
 import re
 from utils import load_json
 from custom_types import AppConfig, GraphState, WorkflowRequest, WorkflowResponse
-from prompts import (
+from ai_system.prompts import (
     query_prompt_with_context,
     grading_prompt,
     solvability_prompt,
