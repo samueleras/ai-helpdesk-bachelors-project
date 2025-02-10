@@ -5,7 +5,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from custom_types import AppConfig, Technician, Ticket, TicketConversation
 from ai_system.vectordb import retrieve_similar_tickets_milvus
-from backend.pydantic_models import User
+from backend.pydantic_models import TicketFilter, User
 
 
 def connect_to_mysql(config: AppConfig) -> None:
@@ -106,6 +106,37 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
         ticket["ticket_conversation"] = get_ticket_conversation(ticket_id, config)
 
         return ticket
+
+    except Exception as e:
+        print(f"Database error: {e}")
+        raise RuntimeError(f"Database error: {e}") from e
+
+    finally:
+        cursor.close()
+        cnx.close()
+
+
+def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[Ticket]:
+    cnx = connect_to_mysql(config)
+    try:
+        cursor = cnx.cursor(dictionary=True)
+
+        query = "SELECT ticket_id, title, content, creation_date, closed_date, u.user_name as author_name, a.user_name as assignee_name FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE 1=1"
+
+        params = ()
+        if filter_data.assignee_id is not None:
+            query += " AND (assignee_id = %s)"
+            params += (filter_data.assignee_id,)
+
+        query += " ORDER BY creation_date DESC"
+        cursor.execute(query, params)
+        tickets = cursor.fetchall()
+
+        for ticket in tickets:
+            ticket["similar_tickets"] = []
+            ticket["ticket_conversation"] = []
+
+        return tickets
 
     except Exception as e:
         print(f"Database error: {e}")

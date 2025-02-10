@@ -8,7 +8,7 @@ from ai_system.vectordb import initialize_milvus, store_ticket_milvus, embed_sum
 from ai_system.ai_system import initialize_langchain
 from custom_types import WorkflowResponse, AppConfig
 from dotenv import load_dotenv
-from backend.pydantic_models import User, WorkflowRequestModel
+from backend.pydantic_models import TicketFilter, User, WorkflowRequestModel
 from utils import load_json
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2AuthorizationCodeBearer
@@ -16,6 +16,8 @@ from typing import Annotated, Callable
 import requests
 import jwt
 from backend.relationaldb import (
+    get_filtered_tickets,
+    get_user_tickets,
     insert_ticket,
     insert_azure_user,
     is_azure_user_in_db,
@@ -231,6 +233,16 @@ async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int
         raise HTTPException(status_code=403, detail="Unauthorized access")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to retrieve ticket")
+
+
+@app.post("/tickets")
+def get_tickets(
+    user: Annotated[User, Depends(check_user_group("technicians"))],
+    filter_data: TicketFilter,
+):
+    tickets = get_filtered_tickets(filter_data, config)
+    print(tickets)
+    return tickets
 
 
 @app.get("/technicians")

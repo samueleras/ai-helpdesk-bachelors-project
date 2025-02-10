@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
 class WorkflowRequestModel(BaseModel):
@@ -14,3 +14,7 @@ class User(BaseModel):
     user_name: str
     email: str
     group: str
+
+
+class TicketFilter(BaseModel):
+    assignee_id: Optional[str] = None
