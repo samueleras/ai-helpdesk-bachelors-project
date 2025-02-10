@@ -68,7 +68,7 @@ def get_ticket_conversation(
     try:
         cursor = cnx.cursor(dictionary=True)
 
-        query = "SELECT t.message, u.user_name as author_name, t.created_at FROM ticket_conversations t INNER JOIN azure_users u ON t.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
+        query = "SELECT t.message, u.user_name as author_name, u.user_group as group, t.created_at FROM ticket_conversations t INNER JOIN azure_users u ON t.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
         cursor.execute(query, (ticket_id,))
         conversations = cursor.fetchall() or []
 

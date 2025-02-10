@@ -74,6 +74,7 @@ class SimilarTicket(TypedDict):
 class TicketConversation(TypedDict):
     message: str
     author_name: str
+    group: str
     created_at: datetime
 
 
