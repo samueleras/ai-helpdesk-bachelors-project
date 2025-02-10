@@ -72,10 +72,8 @@ class SimilarTicket(TypedDict):
 
 
 class TicketConversation(TypedDict):
-    message_id: int
-    ticket_id: int
-    author_id: str
     message: str
+    author_name: str
     created_at: datetime
 
 
@@ -87,6 +85,8 @@ class Ticket(TypedDict):
     creation_date: datetime
     closed_date: Optional[datetime]
     author_id: str
+    author_name: str
     assignee_id: Optional[str]
+    assignee_name: Optional[str]
     similar_tickets: Optional[List[SimilarTicket]]
     ticket_conversation: Optional[List[TicketConversation]]
