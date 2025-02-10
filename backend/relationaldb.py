@@ -68,7 +68,7 @@ def get_ticket_conversation(
     try:
         cursor = cnx.cursor(dictionary=True)
 
-        query = "SELECT t.message, u.user_name as author_name, u.user_group as group, t.created_at FROM ticket_conversations t INNER JOIN azure_users u ON t.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
+        query = "SELECT c.message, u.user_name as author_name, u.user_group as group, c.created_at FROM ticket_conversations c INNER JOIN azure_users u ON c.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
         cursor.execute(query, (ticket_id,))
         conversations = cursor.fetchall() or []
 
@@ -88,18 +88,20 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
     try:
         cursor = cnx.cursor()
 
-        query = "SELECT * FROM tickets WHERE ticket_id = %s"
+        query = "SELECT ticket_id, title, content, summary_vector, creation_date, closed_date, u.user_name as author_name, a.user_name as assignee_name FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE ticket_id = %s"
         cursor.execute(query, (ticket_id,))
         ticket = cursor.fetchone()
 
         ticket["similar_tickets"] = []
         if "summary_vector" in ticket and user.group == "technician":
             # Convert JSON string back to vector list
-            ticket["summary_vector"] = json.loads(ticket["summary_vector"])
-            # Retrieve similar tickets from vector store based on the summary vector
-            similar_tickets = retrieve_similar_tickets_milvus(ticket["summary_vector"])
+            summary_vector = json.loads(ticket["summary_vector"])
+            similar_tickets = retrieve_similar_tickets_milvus(summary_vector)
             print("Similar tickets", similar_tickets)
             ticket["similar_tickets"] = similar_tickets
+
+        if "summary_vector" in ticket:
+            ticket.pop("summary_vector")  # Field not needed on frontend
 
         ticket["ticket_conversation"] = get_ticket_conversation(ticket_id, config)
 

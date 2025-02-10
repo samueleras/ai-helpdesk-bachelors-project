@@ -82,12 +82,9 @@ class Ticket(TypedDict):
     ticket_id: int
     title: str
     content: str
-    summary_vector: Optional[List[float]]
     creation_date: datetime
     closed_date: Optional[datetime]
-    author_id: str
     author_name: str
-    assignee_id: Optional[str]
     assignee_name: Optional[str]
     similar_tickets: Optional[List[SimilarTicket]]
     ticket_conversation: Optional[List[TicketConversation]]
