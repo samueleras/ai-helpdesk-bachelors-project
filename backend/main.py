@@ -245,6 +245,13 @@ def get_tickets(
     return tickets
 
 
+@app.get("/my-tickets")
+def get_my_tickets(user: Annotated[User, Depends(check_user_group("technicians"))]):
+    tickets = get_user_tickets(user, config)
+    print(tickets)
+    return tickets
+
+
 @app.get("/technicians")
 async def get_technicians(
     user: Annotated[User, Depends(check_user_group("technicians"))]
