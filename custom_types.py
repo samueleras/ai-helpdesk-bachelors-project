@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, TypedDict, List, Tuple
+from typing import TypedDict, List, Tuple
 
 
 class OllamaConfig(TypedDict):
@@ -83,11 +83,11 @@ class Ticket(TypedDict):
     title: str
     content: str
     creation_date: datetime
-    closed_date: Optional[datetime]
+    closed_date: datetime | None
     author_name: str
-    assignee_name: Optional[str]
-    similar_tickets: Optional[List[SimilarTicket]]
-    ticket_conversation: Optional[List[TicketConversation]]
+    assignee_name: str | None
+    similar_tickets: List[SimilarTicket]
+    ticket_conversation: List[TicketConversation]
 
 
 class Technician(TypedDict):
