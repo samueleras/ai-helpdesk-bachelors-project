@@ -47,7 +47,7 @@
         console.log(conversation);
         document.getElementById("response").innerText += "\n\nUser: " + text;
 
-        fetch("http://127.0.0.1:5000/init_ai_workflow", {
+        fetch("http://127.0.0.1:8000/init_ai_workflow", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -62,23 +62,21 @@
           .then((response) => response.json())
           .then((data) => {
             excecution_count++;
-            console.log(data);
-            data = data[0];
-            conversation.push(["ai", data.response.llm_output]);
-            query_prompt = data.response.query_prompt;
+            conversation.push(["ai", data.llm_output]);
+            query_prompt = data.query_prompt;
             console.log(conversation);
             console.log("query_prompt: ", query_prompt);
-            if (data.response.ticket && !ticket) {
+            if (data.ticket && !ticket) {
               toggleForm();
             }
-            if (data.response.ticket_content !== "") {
+            if (data.ticket_content !== "") {
               console.log("Ticket");
               console.log(data);
               document.getElementById("response").innerText +=
-                "\n\nTicket: " + data.response.ticket_content;
+                "\n\nTicket: " + data.ticket_content;
             } else {
               document.getElementById("response").innerText +=
-                "\n\nAI: " + data.response.llm_output;
+                "\n\nAI: " + data.llm_output;
             }
           })
           .catch((error) => console.error("Error:", error));

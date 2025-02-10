@@ -4,8 +4,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-import mysql.connector
-from vectordb import initialize_milvus, store_ticket_milvus, embed_summary
+from ai_system.vectordb import initialize_milvus, store_ticket_milvus, embed_summary
 from ai_system import initialize_langchain
 from custom_types import WorkflowResponse, AppConfig
 from dotenv import load_dotenv

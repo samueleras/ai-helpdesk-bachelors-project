@@ -4,7 +4,7 @@ from typing import List
 import mysql.connector
 from mysql.connector import errorcode
 from custom_types import AppConfig, Ticket, TicketConversation
-from vectordb import retrieve_similar_tickets_milvus
+from ai_system.vectordb import retrieve_similar_tickets_milvus
 from pydantic_models import User
 
 
