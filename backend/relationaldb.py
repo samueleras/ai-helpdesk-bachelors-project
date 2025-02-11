@@ -3,7 +3,7 @@ import os
 from typing import List
 import mysql.connector
 from mysql.connector import errorcode
-from custom_types import AppConfig, Technician, Ticket, TicketConversation
+from custom_types import AppConfig, Technician, Ticket, TicketMessage
 from ai_system.vectordb import retrieve_similar_tickets_milvus
 from backend.pydantic_models import TicketFilter, User
 
@@ -61,18 +61,16 @@ def insert_ticket(
         cnx.close()
 
 
-def get_ticket_conversation(
-    ticket_id: int, config: AppConfig
-) -> List[TicketConversation]:
+def get_ticket_messages(ticket_id: int, config: AppConfig) -> List[TicketMessage]:
     cnx = connect_to_mysql(config)
     try:
         cursor = cnx.cursor(dictionary=True)
 
-        query = "SELECT c.message, u.user_name as author_name, u.user_group as group, c.created_at FROM ticket_conversations c INNER JOIN azure_users u ON c.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
+        query = "SELECT m.message, u.user_name as author_name, u.user_group as group, m.created_at FROM ticket_messages m INNER JOIN azure_users u ON m.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
         cursor.execute(query, (ticket_id,))
-        conversations = cursor.fetchall() or []
+        messages = cursor.fetchall() or []
 
-        return conversations
+        return messages
 
     except Exception as e:
         print(f"Database error: {e}")
@@ -103,7 +101,7 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
         if "summary_vector" in ticket:
             ticket.pop("summary_vector")  # Field not needed on frontend
 
-        ticket["ticket_conversation"] = get_ticket_conversation(ticket_id, config)
+        ticket["ticket_messages"] = get_ticket_messages(ticket_id, config)
 
         return ticket
 
@@ -134,7 +132,7 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[T
 
         for ticket in tickets:
             ticket["similar_tickets"] = []
-            ticket["ticket_conversation"] = []
+            ticket["ticket_messages"] = []
 
         return tickets
 
@@ -158,7 +156,7 @@ def get_user_tickets(user: User, config: AppConfig) -> List[Ticket]:
 
         for ticket in tickets:
             ticket["similar_tickets"] = []
-            ticket["ticket_conversation"] = []
+            ticket["ticket_messages"] = []
 
         return tickets
 

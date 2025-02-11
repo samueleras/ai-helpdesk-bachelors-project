@@ -71,7 +71,7 @@ class SimilarTicket(TypedDict):
     title: str
 
 
-class TicketConversation(TypedDict):
+class TicketMessage(TypedDict):
     message: str
     author_name: str
     group: str
@@ -87,7 +87,7 @@ class Ticket(TypedDict):
     author_name: str
     assignee_name: str | None
     similar_tickets: List[SimilarTicket]
-    ticket_conversation: List[TicketConversation]
+    ticket_messages: List[TicketMessage]
 
 
 class Technician(TypedDict):
