@@ -146,9 +146,11 @@ def check_user_group(required_group_id: str) -> Callable[[User], User]:
 
 
 # Serve frontend files
-@app.get("/")
-async def serve_frontend():
-    return FileResponse(os.path.join(app_path, "frontend", "static", "index.html"))
+app.mount(
+    "/",
+    StaticFiles(directory=os.path.join(app_path, "frontend", "dist"), html=True),
+    name="static",
+)
 
 
 # Return user properties for frontend, only possible if token is valid => User authenticated
