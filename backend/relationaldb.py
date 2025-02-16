@@ -6,6 +6,9 @@ from mysql.connector import errorcode
 from custom_types import AppConfig, Technician, Ticket, TicketMessage
 from ai_system.vectordb import retrieve_similar_tickets_milvus
 from backend.pydantic_models import TicketFilter, User
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def connect_to_mysql(config: AppConfig) -> None:
@@ -20,14 +23,26 @@ def connect_to_mysql(config: AppConfig) -> None:
         return cnx
     except mysql.connector.Error as e:
         if e.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print(f"Something is wrong with your user name or password: {e.msg}")
+            logger.error(
+                f"Database credentials issue: {e.msg}",
+                exc_info=True,
+            )
         elif e.errno == errorcode.ER_BAD_DB_ERROR:
-            print(f"Database does not exist: {e.msg}")
+            logger.error(
+                f"Database does not exist: {e.msg}",
+                exc_info=True,
+            )
         else:
-            print(f"Database connection failed: {e.msg}")
+            logger.error(
+                f"Database connection failed: {e.msg}",
+                exc_info=True,
+            )
         raise RuntimeError("Database connection failed")
     except Exception as e:
-        print(f"Database connection failed: {e}")
+        logger.error(
+            f"Database connection failed: {e}",
+            exc_info=True,
+        )
         raise RuntimeError("Database connection failed") from e
 
 
@@ -49,11 +64,16 @@ def insert_ticket(
         cursor.execute(query, values)
         cnx.commit()
         ticket_id = cursor.lastrowid  # Get auto-generated ticket_id
-
+        logger.info(
+            "Successfully inserted ticket into MySQL.",
+        )
         return ticket_id
 
     except Exception as e:
-        print(f"Database error on ticket insert: {e}")
+        logger.error(
+            f"Database error on ticket insert: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Database error ticket insert: {e}") from e
 
     finally:
@@ -73,7 +93,10 @@ def get_ticket_messages(ticket_id: int, config: AppConfig) -> List[TicketMessage
         return messages
 
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Database error: {e}") from e
 
     finally:
@@ -95,7 +118,6 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
             # Convert JSON string back to vector list
             summary_vector = json.loads(ticket["summary_vector"])
             similar_tickets = retrieve_similar_tickets_milvus(summary_vector)
-            print("Similar tickets", similar_tickets)
             ticket["similar_tickets"] = similar_tickets
 
         if "summary_vector" in ticket:
@@ -106,7 +128,10 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
         return ticket
 
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Database error: {e}") from e
 
     finally:
@@ -137,7 +162,10 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[T
         return tickets
 
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Database error: {e}") from e
 
     finally:
@@ -161,7 +189,10 @@ def get_user_tickets(user: User, config: AppConfig) -> List[Ticket]:
         return tickets
 
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Database error: {e}") from e
 
     finally:
@@ -181,7 +212,10 @@ def get_technicians(config: AppConfig) -> List[Technician]:
         return technicians
 
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Database error: {e}") from e
 
     finally:
@@ -194,7 +228,10 @@ def insert_azure_user(
 ) -> None:
     cnx = connect_to_mysql(config)
     if not cnx:
-        print("Database connection failed")
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
         raise RuntimeError("Database connection failed") from e
 
     cursor = cnx.cursor()
@@ -208,10 +245,15 @@ def insert_azure_user(
         )
         cursor.execute(query, values)
         cnx.commit()
-        print(f"Inserted user {user_name} into database")
+        logger.info(
+            f"Inserted user {user_name} into database",
+        )
 
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Database error: {e}") from e
 
     finally:
@@ -236,7 +278,10 @@ def is_azure_user_in_db(user_id: str, config: AppConfig) -> bool:
         return result is not None
 
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Database error: {e}") from e
 
     finally:
