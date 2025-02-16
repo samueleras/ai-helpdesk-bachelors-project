@@ -22,6 +22,9 @@ from ai_system.prompts import (
     ticket_summary_prompt,
     ticket_title_prompt,
 )
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -63,14 +66,20 @@ def initialize_langchain(config: AppConfig):
         return cleaned_response.strip()
 
     def retrieve_or_generate_query_prompt(state: GraphState):
-        print("retrieve_or_generate_query_prompt")
+        logger.debug(
+            "retrieve_or_generate_query_prompt",
+        )
         ticket = state["ticket"]
         query_prompt = state["query_prompt"]
         if ticket and query_prompt != "":
-            print("retrieve_documents")
+            logger.debug(
+                "retrieve_documents",
+            )
             return "retrieve_documents"
         else:
-            print("generate_query_prompt")
+            logger.debug(
+                "generate_query_prompt",
+            )
             return "generate_query_prompt"
 
     def generate_query_prompt(state: GraphState):
@@ -84,8 +93,12 @@ def initialize_langchain(config: AppConfig):
 
     def retrieve_documents(state: GraphState):
         query_prompt = state["query_prompt"]
-        print("Query Prompt: ", query_prompt)
-        print("retrieve_documents")
+        logger.debug(
+            f"Query Prompt: {query_prompt}",
+        )
+        logger.debug(
+            "retrieve_documents",
+        )
         retrieved_data = retrieve_documents_milvus(query_prompt)
         documents = []
         if retrieved_data:
@@ -99,7 +112,9 @@ def initialize_langchain(config: AppConfig):
         return {"documents": documents}
 
     def grade_documents(state: GraphState):
-        print("grade_documents")
+        logger.debug(
+            "grade_documents",
+        )
         input = state["input"]
         documents = state["documents"]
         chat_history = state["chat_history"]
@@ -113,9 +128,13 @@ def initialize_langchain(config: AppConfig):
                     "chat_history": chat_history,
                 }
             ).content[0]
-            print("Document Grade: ", score)
+            logger.debug(
+                f"Document Grade: {score}",
+            )
             if score == "1":
-                print("Doc appended")
+                logger.debug(
+                    "Doc appended",
+                )
                 filtered_docs.append(doc)
         if len(filtered_docs) < 2:
             web_search = True
@@ -125,17 +144,25 @@ def initialize_langchain(config: AppConfig):
         }
 
     def decide_web_search(state: GraphState):
-        print("decide_web_search")
+        logger.debug(
+            "decide_web_search",
+        )
         web_search = state["web_search"]
         ticket = state["ticket"]
         if web_search:
-            print("perform_web_search")
+            logger.debug(
+                "perform_web_search",
+            )
             return "perform_web_search"
         elif ticket:
-            print("check_ticket_details_provided")
+            logger.debug(
+                "check_ticket_details_provided",
+            )
             return "check_ticket_details_provided"
         else:
-            print("check_solvability")
+            logger.debug(
+                "check_solvability",
+            )
             return "check_solvability"
 
     def perform_web_search(state: GraphState):
@@ -152,23 +179,34 @@ def initialize_langchain(config: AppConfig):
             )
             return {"documents": documents}
         except Exception as e:
-            print(f"Error in perform_web_search: {e}")
+            logger.error(
+                f"Error in perform_web_search: {e}",
+                exc_info=True,
+            )
             raise
 
     def decide_ticket_or_troubelshooting_path(state: GraphState):
-        print("decide_ticket_or_troubelshooting_path")
+        logger.debug(
+            "decide_ticket_or_troubelshooting_path",
+        )
         ticket = state["ticket"]
         if ticket:
-            print("check_ticket_details_provided")
+            logger.debug(
+                "check_ticket_details_provided",
+            )
             return "check_ticket_details_provided"
         else:
-            print("check_solvability")
+            logger.debug(
+                "check_solvability",
+            )
             return "check_solvability"
 
     def check_solvability(state: GraphState):
         excecution_count = state["excecution_count"]
         if excecution_count >= config["workflow"]["max_count_of_troubleshootings"]:
-            print("Execition >= 3, therefore propose ticket!")
+            logger.debug(
+                f"Execition >= {config["workflow"]["max_count_of_troubleshootings"]}, therefore ticket will be proposed.",
+            )
             return {"solvable": "0"}
         input = state["input"]
         chat_history = state["chat_history"]
@@ -184,13 +222,19 @@ def initialize_langchain(config: AppConfig):
         return {"solvable": solvable}
 
     def decide_issue_troubleshootable(state: GraphState):
-        print("decide_issue_troubleshootable")
+        logger.debug(
+            "decide_issue_troubleshootable",
+        )
         solvable = state["solvable"]
         if solvable[0] == "1":
-            print("generate_troubleshooting_guide")
+            logger.debug(
+                "generate_troubleshooting_guide",
+            )
             return "generate_troubleshooting_guide"
         else:
-            print("offer_ticket")
+            logger.debug(
+                "offer_ticket",
+            )
             return "offer_ticket"
 
     def check_ticket_details_provided(state: GraphState):
@@ -202,13 +246,19 @@ def initialize_langchain(config: AppConfig):
         return {"further_details": further_details}
 
     def decide_ticket_details_provided(state: GraphState):
-        print("decide_ticket_details_provided")
+        logger.debug(
+            "decide_ticket_details_provided",
+        )
         further_details = state["further_details"]
         if further_details:
-            print("ask_for_ticket_details")
+            logger.debug(
+                "ask_for_ticket_details",
+            )
             return "ask_for_ticket_details"
         else:
-            print("generate_ticket")
+            logger.debug(
+                "generate_ticket",
+            )
             return "generate_ticket"
 
     def generate_troubleshooting_guide(state: GraphState):
@@ -250,7 +300,9 @@ def initialize_langchain(config: AppConfig):
             input = state["input"]
             chat_history = state["chat_history"]
             documents = state["documents"]
-            print("generate_issue_description")
+            logger.debug(
+                "generate_issue_description",
+            )
             issue_description = ticket_issue_description_chain.invoke(
                 {
                     "chat_history": chat_history,
@@ -258,7 +310,9 @@ def initialize_langchain(config: AppConfig):
                 }
             ).content
             issue_description = remove_think_tags(issue_description)
-            print("generate_proposed_solutions")
+            logger.debug(
+                "generate_proposed_solutions",
+            )
             proposed_solutions = ticket_propose_solutions_chain.invoke(
                 {
                     "issue_description": [SystemMessage(issue_description)],
@@ -267,12 +321,16 @@ def initialize_langchain(config: AppConfig):
             ).content
             proposed_solutions = remove_think_tags(proposed_solutions)
             generated_ticket = issue_description + "\n" + proposed_solutions
-            print("generate_ticket_summary")
+            logger.debug(
+                "generate_ticket_summary",
+            )
             ticket_summary = ticket_summary_chain.invoke(
                 {"ticket": [SystemMessage(content=issue_description)]}
             ).content
             ticket_summary = remove_think_tags(ticket_summary)
-            print("generate_ticket_title")
+            logger.debug(
+                "generate_ticket_title",
+            )
             ticket_title = ticket_title_chain.invoke(
                 {"ticket": [SystemMessage(content=ticket_summary)]}
             ).content
@@ -283,7 +341,10 @@ def initialize_langchain(config: AppConfig):
                 "ticket_title": ticket_title,
             }
         except Exception as e:
-            print(f"ERROR in generate_ticket: {str(e)}")
+            logger.error(
+                f"Ticket generation failed: {str(e)}",
+                exc_info=True,
+            )
             raise RuntimeError(f"Ticket generation failed: {str(e)}") from e
 
     # Graph
@@ -388,8 +449,9 @@ def initialize_langchain(config: AppConfig):
         try:
             input = [conversation.pop()]
             chat_history = conversation
-            print("chat_history: ", chat_history)
-            print("question: ", input)
+            logger.debug(
+                f"Initate AI workflow with: Question: {input}; Chat_history: {chat_history}; Execution Count: {excecution_count}",
+            )
             config = {"configurable": {"thread_id": str(uuid.uuid4())}}
             state_dict = custom_graph.invoke(
                 {
@@ -401,7 +463,6 @@ def initialize_langchain(config: AppConfig):
                 },
                 config,
             )
-            print("Execution Count: ", excecution_count)
             response: WorkflowResponse = {
                 "llm_output": state_dict.get("generation", ""),
                 "ticket_title": state_dict.get("ticket_title", ""),
@@ -410,10 +471,18 @@ def initialize_langchain(config: AppConfig):
                 "query_prompt": state_dict.get("query_prompt", ""),
                 "ticket": state_dict["ticket"],
             }
-            print(response)
+            logger.info(
+                "Sucessfully executed AI workflow.",
+            )
+            logger.debug(
+                f"AI Workflow Response: {response}",
+            )
             return response
         except Exception as e:
-            print(f"ERROR in initiate_workflow: {str(e)}")
+            logger.error(
+                f"Initiate workflow failed: {str(e)}",
+                exc_info=True,
+            )
             raise RuntimeError(f"ERROR in initiate_workflow: {str(e)}") from e
 
     return LangChainModel(initiate_workflow_async)
