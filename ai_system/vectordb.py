@@ -9,6 +9,9 @@ from PyPDF2 import PdfReader
 from pathlib import Path
 import threading
 from custom_types import AppConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 observer_started = False
 
@@ -19,8 +22,9 @@ def _create_user_and_schema():
             uri=config["milvus"]["host"], token="root:Milvus"
         )
     except:
-        print(
-            "Error: Cannot access root. Root password has to remain default for initial start up."
+        logger.critical(
+            "Cannot access root. Root password has to remain default for initial start up.",
+            exc_info=True,
         )
         return
     try:
@@ -76,7 +80,9 @@ def _create_user_and_schema():
                     index_params=index_params,
                 )
             except:
-                print("Collection already exists")
+                logger.info(
+                    "Collection already exists",
+                )
 
             schema = MilvusClient.create_schema(
                 auto_id=False,
@@ -108,10 +114,15 @@ def _create_user_and_schema():
                     index_params=index_params,
                 )
             except:
-                print("Collection already exists")
+                logger.info(
+                    "Collection already exists",
+                )
 
     except Exception as e:
-        print(f"Creating Milvus User and Collections failed: {e}")
+        logger.critical(
+            f"Creating Milvus User and Collections failed: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Creating Milvus User and Collections failed: {e}") from e
 
 
@@ -137,7 +148,10 @@ def _initialize_directory(milvus_client: MilvusClient, directory: str):
             try:
                 reader = PdfReader(file_path)
             except Exception as e:
-                print(f"Error on reading PDF file: {e}")
+                logger.warning(
+                    f"Error on reading PDF file: {e}",
+                    exc_info=True,
+                )
                 return
             text = ""
             for page in reader.pages:
@@ -160,9 +174,14 @@ def _initialize_directory(milvus_client: MilvusClient, directory: str):
             ]
 
             res = milvus_client.insert(collection_name="collection_rag", data=data)
-            print(res)
+            logger.info(
+                f"Initialized RAG documents directory: {res}",
+            )
     except Exception as e:
-        print(f"Milvus Directory Initialization failed: {e}")
+        logger.error(
+            f"Milvus Directory Initialization failed: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Milvus Directory Initialization failed: {e}") from e
 
 
@@ -201,14 +220,19 @@ class DirectoryWatcher(FileSystemEventHandler):
         callback(file_path)
 
     def process_file(self, file_path: str) -> None:
-        print(f"Processing file: {file_path}")
+        logger.info(
+            f"Processing file for insert: {file_path}",
+        )
         try:
             os.system(f'attrib -h "{file_path}"')
             file_name = os.path.basename(file_path)
             try:
                 reader = PdfReader(file_path)
             except:
-                print("Error: File not readable. Only pdf files are supported.")
+                logger.warning(
+                    "File not readable. Only pdf files are supported.",
+                    exc_info=True,
+                )
                 return
             text = ""
             for page in reader.pages:
@@ -231,12 +255,18 @@ class DirectoryWatcher(FileSystemEventHandler):
             ]
 
             res = milvus_client.insert(collection_name="collection_rag", data=data)
-            print(res)
+            logger.info(
+                f"Inserted RAG document: {res}",
+            )
         except Exception as e:
-            print(f"Processing PDF File failed: {e}")
+            logger.warning(
+                f"Processing PDF File failed: {e}",
+            )
 
     def delete_vectors(self, file_path: str) -> None:
-        print(f"Deleting vectors for file: {file_path}")
+        logger.info(
+            f"Processing file for deletion: {file_path}",
+        )
         attempts = 0
         while attempts < 3:
             try:
@@ -245,18 +275,25 @@ class DirectoryWatcher(FileSystemEventHandler):
                     collection_name="collection_rag",
                     filter=f'metadata == "{file_name}"',
                 )
-                print(res)
+                logger.info(
+                    f"Deleted RAG document: {res}",
+                )
                 return
             except Exception as e:
                 attempts += 1
-                print(f"Processing PDF File failed: {e}")
+                logger.warning(
+                    f"Failed to delete vectors for PDF File: {e}",
+                    exc_info=True,
+                )
 
 
 def _watch_directory(milvus_client: MilvusClient, directory: str) -> None:
     event_handler: DirectoryWatcher = DirectoryWatcher(milvus_client)
     observer = Observer()
     observer.schedule(event_handler, directory, recursive=False)
-    print(f"Watching directory: {directory}")
+    logger.info(
+        f"Watching directory: {directory}",
+    )
     observer.start()
     try:
         while observer.is_alive():
@@ -273,7 +310,9 @@ def initialize_milvus(config_file: AppConfig):
     milvus_client = None
     attempts = 0
 
-    print("Initiating Milvus DB connection...")
+    logger.info(
+        "Initiating Milvus DB connection...",
+    )
 
     try:
         while not milvus_client and attempts < 3:
@@ -282,13 +321,19 @@ def initialize_milvus(config_file: AppConfig):
                     uri=config["milvus"]["host"],
                     token=config["milvus"]["user"] + ":" + os.getenv("MILVUS_PASSWORD"),
                 )
-                print("Load available Collections:", milvus_client.list_collections())
+                logger.info(
+                    f"Load available Collections: {milvus_client.list_collections()}",
+                )
                 milvus_client.load_collection(collection_name="collection_rag")
                 milvus_client.load_collection(collection_name="collection_ticket")
             except Exception as e:
-                print(f"Error on loading collections {e}")
-                print(
-                    "Creating user or adjusting password and creating schema if it does not exist."
+                logger.error(
+                    f"Error on loading collections {e}",
+                    exc_info=True,
+                )
+                logger.info(
+                    "Creating user or adjusting password and creating schema if it does not exist.",
+                    exc_info=True,
                 )
                 _create_user_and_schema()
             attempts += 1
@@ -315,8 +360,14 @@ def initialize_milvus(config_file: AppConfig):
             daemon=True,
         )
         watcher_thread.start()
+        logger.info(
+            "Milvus DB successfully initialized.",
+        )
     except Exception as e:
-        print(f"Milvus initialization failed: {e}")
+        logger.critical(
+            f"Milvus initialization failed: {e}",
+            exc_info=True,
+        )
         raise RuntimeError(f"Milvus initialization failed: {e}") from e
 
 
@@ -332,7 +383,10 @@ def retrieve_documents_milvus(query: str) -> List[dict]:
             output_fields=["text", "metadata"],
         )[0]
     except Exception as e:
-        print(f"Document retrieval failed: {e}")
+        logger.error(
+            f"Document retrieval failed: {e}",
+            exc_info=True,
+        )
         return []
 
 
@@ -344,7 +398,10 @@ def embed_summary(summary: str) -> List[float]:
             return embedding[0]
         except Exception as e:
             attempts += 1
-            print(f"Creating Summary Embedding failed on attempt {attempts + 1}: {e}")
+            logger.error(
+                f"Creating Summary Embedding failed on attempt {attempts + 1}: {e}",
+                exc_info=True,
+            )
     raise RuntimeError(f"Failed to embed summary: {e}") from e
 
 
@@ -354,15 +411,20 @@ def store_ticket_milvus(
     attempts = 0
     while attempts < 3:
         try:
-            print("Try to store ticket in milvus")
             data = [
                 {"id": ticket_id, "embedding": summary_vector, "title": ticket_title}
             ]
             milvus_client.insert(collection_name="collection_ticket", data=data)
+            logger.info(
+                f"Stored ticket with id: {ticket_id} in Milvus database.",
+            )
             return
         except Exception as e:
             attempts += 1
-            print(f"Storing ticket in Milvus failed on attempt {attempts + 1}: {e}")
+            logger.error(
+                f"Storing ticket in Milvus failed on attempt {attempts + 1}: {e}",
+                exc_info=True,
+            )
 
 
 def retrieve_similar_tickets_milvus(summary_vector: List[float]) -> List[dict]:
@@ -376,5 +438,8 @@ def retrieve_similar_tickets_milvus(summary_vector: List[float]) -> List[dict]:
             output_fields=["title"],
         )[0]
     except Exception as e:
-        print(f"Retrieving similar tickets failed: {e}")
+        logger.error(
+            f"Retrieving similar tickets failed: {e}",
+            exc_info=True,
+        )
         return []
