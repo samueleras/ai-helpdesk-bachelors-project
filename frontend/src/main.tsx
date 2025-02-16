@@ -8,7 +8,7 @@ import AIChatPage from "./pages/AIChatPage.tsx";
 import TicketPage from "./pages/TicketPage.tsx";
 import MyTicketsPage from "./pages/MyTicketsPage.tsx";
 import TechnicianPortalPage from "./pages/TechnicianPortalPage.tsx";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import ErrorPage from "./pages/ErrorPage.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -20,9 +20,9 @@ createRoot(document.getElementById("root")!).render(
           <Route path="technician-portal" element={<TechnicianPortalPage />} />
           <Route path="my-tickets" element={<MyTicketsPage />} />
           <Route path="ticket/:id" element={<TicketPage />} />
+          <Route path="*" element={<ErrorPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
-    <ReactQueryDevtools />
   </StrictMode>
 );
