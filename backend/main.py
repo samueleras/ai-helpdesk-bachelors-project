@@ -1,4 +1,6 @@
+from contextlib import asynccontextmanager
 import json
+from logging.handlers import RotatingFileHandler
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +17,7 @@ from fastapi.security import OAuth2AuthorizationCodeBearer
 from typing import Annotated, Callable
 import requests
 import jwt
+import logging
 from backend.relationaldb import (
     get_filtered_tickets,
     get_user_tickets,
@@ -34,6 +37,28 @@ app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 config: AppConfig = load_json(os.path.join(app_path, "config.json"))
 initialize_milvus(config)
 langchain_model = initialize_langchain(config)
+
+# Init rotating file logger
+file_handler = RotatingFileHandler("app.log", maxBytes=5000000, backupCount=5)
+# Init console logger
+console_handler = logging.StreamHandler()
+# Logger config
+log_level = getattr(
+    logging,
+    config.get("logging", {}).get("logging_level", "INFO").upper(),
+    logging.INFO,
+)
+logging.basicConfig(
+    level=log_level,
+    handlers=[file_handler, console_handler],
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+
+# Add file handler to Uvicorn loggers
+uvicorn_logger = logging.getLogger("uvicorn")
+uvicorn_logger.addHandler(file_handler)
+
+logger = logging.getLogger(__name__)
 
 # Azure AD URLs and IDs
 TENANT_ID = os.getenv("TENANT_ID")
@@ -63,13 +88,6 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
-# Define static directory to serve frontend files
-app.mount(
-    "/static",
-    StaticFiles(directory=os.path.join(app_path, "frontend/static"), html=True),
-    name="frontend",
 )
 
 
@@ -130,7 +148,7 @@ def check_user_group(required_group_id: str) -> Callable[[User], User]:
 # Serve frontend files
 @app.get("/")
 async def serve_frontend():
-    return FileResponse(os.path.join(app_path, "static", "index.html"))
+    return FileResponse(os.path.join(app_path, "frontend", "static", "index.html"))
 
 
 # Return user properties for frontend, only possible if token is valid => User authenticated
@@ -172,7 +190,7 @@ async def init_ai_workflow(data: WorkflowRequestModel):
             conversation, query_prompt, ticket, excecution_count
         )
     except Exception as e:
-        print(f"Workflow execution failed: {str(e)}")
+        logger.error(f"Workflow execution failed: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail="Workflow execution failed")
 
     # If a ticket was generated, store it in the database and return the ID
@@ -205,7 +223,7 @@ async def init_ai_workflow(data: WorkflowRequestModel):
                 return {"ticket_id": ticket_id, "ticket_content": content}
 
             except Exception as e:
-                print(f"Error on attempt {attempts + 1}: {e}")
+                logger.error(f"Error on attempt {attempts + 1}: {e}", exc_info=True)
 
             attempts += 1
 
@@ -220,12 +238,12 @@ async def init_ai_workflow(data: WorkflowRequestModel):
 async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int):
     try:
         ticket = get_ticket(id, user, config)
-        print(ticket)
         # Only allow the request for the ticket author and technicians
         if user.user_id != ticket["author_id"]:
             if user.group != "technician":
-                print(
-                    "Unauthorized ticket access. User is not the ticket author or part of the technicians group."
+                logger.warning(
+                    "Unauthorized ticket access. User is not the ticket author or part of the technicians group.",
+                    exc_info=True,
                 )
                 raise PermissionError
         return ticket
@@ -241,14 +259,12 @@ def get_tickets(
     filter_data: TicketFilter,
 ):
     tickets = get_filtered_tickets(filter_data, config)
-    print(tickets)
     return tickets
 
 
 @app.get("/my-tickets")
 def get_my_tickets(user: Annotated[User, Depends(check_user_group("technicians"))]):
     tickets = get_user_tickets(user, config)
-    print(tickets)
     return tickets
 
 
@@ -258,7 +274,6 @@ async def get_technicians(
 ):
     try:
         technicians = get_technicians(config)
-        print(technicians)
         return technicians
     except PermissionError as e:
         raise HTTPException(status_code=403, detail="Unauthorized access")

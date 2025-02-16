@@ -1,4 +1,7 @@
 {
+  "logging": {
+    "logging_level": "DEBUG"
+  },
   "ollama": {
     "llm": "gemma2:9b-instruct-q4_K_M",
     "embedding_model": "mxbai-embed-large"
