@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test LangChain App</title>
+  </head>
+  <body>
+    <h1>Ask a Question</h1>
+    <form id="askForm">
+      <label for="question">Enter Question:</label>
+      <input
+        type="text"
+        id="question"
+        name="question"
+        style="width: 300px; height: 40px; font-size: 18px; padding: 10px"
+      />
+
+      <button type="submit">Submit</button>
+    </form>
+    <p id="response"></p>
+    <form id="ticketForm" style="display: none">
+      <button id="buttonTicket" type="button">Create Ticket</button>
+    </form>
+
+    <script>
+      let conversation = [];
+      let query_prompt = "";
+      let ticket = false;
+      let excecution_count = 0;
+      function toggleForm() {
+        let form = document.getElementById("ticketForm");
+        form.style.display =
+          form.style.display === "none" || form.style.display === ""
+            ? "block"
+            : "none";
+      }
+      function hideForm() {
+        document.getElementById("ticketForm").style.display = "none";
+      }
+      conversation = [];
+
+      function submit(e, text) {
+        e.preventDefault();
+
+        conversation.push(["human", text]);
+        console.log(conversation);
+        document.getElementById("response").innerText += "\n\nUser: " + text;
+
+        fetch("http://127.0.0.1:8000/init_ai_workflow", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            conversation,
+            query_prompt,
+            ticket,
+            excecution_count,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            excecution_count++;
+            conversation.push(["ai", data.llm_output]);
+            query_prompt = data.query_prompt;
+            console.log(conversation);
+            console.log("query_prompt: ", query_prompt);
+            if (data.ticket && !ticket) {
+              toggleForm();
+            }
+            if (data.ticket_content !== "") {
+              console.log("Ticket");
+              console.log(data);
+              document.getElementById("response").innerText +=
+                "\n\nTicket: " + data.ticket_content;
+            } else {
+              document.getElementById("response").innerText +=
+                "\n\nAI: " + data.llm_output;
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      function createTicket(e, text) {
+        e.preventDefault();
+        excecution_count = 0;
+        hideForm();
+        ticket = true;
+        submit(e, text);
+      }
+
+      document
+        .getElementById("askForm")
+        .addEventListener("submit", (e) =>
+          submit(e, document.getElementById("question").value)
+        );
+
+      document
+        .getElementById("buttonTicket")
+        .addEventListener("click", (e) =>
+          createTicket(e, "Please create a ticket for me.")
+        );
+    </script>
+  </body>
+</html>
