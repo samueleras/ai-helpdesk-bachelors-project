@@ -35,8 +35,6 @@ app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Load configuration
 config: AppConfig = load_json(os.path.join(app_path, "config.json"))
-initialize_milvus(config)
-langchain_model = initialize_langchain(config)
 
 # Init rotating file logger
 file_handler = RotatingFileHandler("app.log", maxBytes=5000000, backupCount=5)
@@ -59,6 +57,9 @@ uvicorn_logger = logging.getLogger("uvicorn")
 uvicorn_logger.addHandler(file_handler)
 
 logger = logging.getLogger(__name__)
+
+initialize_milvus(config)
+langchain_model = initialize_langchain(config)
 
 # Azure AD URLs and IDs
 TENANT_ID = os.getenv("TENANT_ID")
