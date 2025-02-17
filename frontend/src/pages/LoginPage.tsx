@@ -1,19 +1,20 @@
 import { useMsal } from "@azure/msal-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import useAuthStore from "../stores/AuthStore";
 
 const LoginPage = () => {
   const { instance } = useMsal();
-  const [userGroup, setUserGroup] = useState(null);
   const navigate = useNavigate();
+  const { user, login } = useAuthStore();
 
   useEffect(() => {
-    if (userGroup) {
+    if (user) {
       console.log("Logged in successfully!");
-      if (userGroup === "users") navigate("/my-tickets");
-      if (userGroup === "technicians") navigate("/technician-portal");
+      if (user.group === "users") navigate("/my-tickets");
+      if (user.group === "technicians") navigate("/technician-portal");
     }
-  }, [userGroup]);
+  }, [user]);
 
   const handleLogin = async () => {
     try {
@@ -31,8 +32,8 @@ const LoginPage = () => {
     const response = await fetch(endpoint, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    const data = await response.json();
-    setUserGroup(data.group);
+    const fetchedUser = await response.json();
+    login(fetchedUser);
   };
 
   return (
