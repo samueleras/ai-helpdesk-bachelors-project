@@ -17,6 +17,7 @@ const LoginPage = () => {
 
   const handleLogin = async () => {
     try {
+      instance.clearCache();
       const response = await instance.loginPopup();
       const accessToken = response.accessToken;
       await fetchUserInfo(accessToken);
@@ -26,7 +27,8 @@ const LoginPage = () => {
   };
 
   const fetchUserInfo = async (accessToken: string) => {
-    const response = await fetch("http://localhost:8000/users/me", {
+    const endpoint = import.meta.env.VITE_BACKEND_URL + "/users/me";
+    const response = await fetch(endpoint, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const data = await response.json();
