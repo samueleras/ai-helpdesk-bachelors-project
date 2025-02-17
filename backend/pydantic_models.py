@@ -12,7 +12,6 @@ class WorkflowRequestModel(BaseModel):
 class User(BaseModel):
     user_id: str
     user_name: str
-    email: str
     group: str
 
 

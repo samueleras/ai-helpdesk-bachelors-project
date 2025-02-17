@@ -121,7 +121,6 @@ async def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
         return User(
             user_id=user_resp.get("id"),
             user_name=user_resp.get("displayName"),
-            email=user_resp.get("mail") or user_resp.get("userPrincipalName"),
             group=group,
         )
 
