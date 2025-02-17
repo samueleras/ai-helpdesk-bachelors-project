@@ -145,14 +145,6 @@ def check_user_group(required_group_id: str) -> Callable[[User], User]:
     return role_checker
 
 
-# Serve frontend files
-app.mount(
-    "/",
-    StaticFiles(directory=os.path.join(app_path, "frontend", "dist"), html=True),
-    name="static",
-)
-
-
 # Return user properties for frontend, only possible if token is valid => User authenticated
 @app.get("/users/me")
 async def read_users_me(user: Annotated[User, Depends(verify_token)]):
@@ -161,6 +153,7 @@ async def read_users_me(user: Annotated[User, Depends(verify_token)]):
             insert_azure_user(user.user_id, user.user_name, user.group, config)
     except Exception:
         raise HTTPException(status_code=500, detail="Storing user data failed")
+    print(user)
     return user
 
 
@@ -281,3 +274,11 @@ async def get_technicians(
         raise HTTPException(status_code=403, detail="Unauthorized access")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to retrieve technicians")
+
+
+# Serve frontend files
+app.mount(
+    "/",
+    StaticFiles(directory=os.path.join(app_path, "frontend", "dist"), html=True),
+    name="static",
+)
