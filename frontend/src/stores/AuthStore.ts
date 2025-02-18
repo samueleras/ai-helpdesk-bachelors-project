@@ -1,11 +1,5 @@
 import { create } from "zustand";
-
-interface User {
-  user_id?: string;
-  user?: string;
-  group?: string;
-}
-
+import { User } from "../entities/User";
 interface AuthStore {
   user: User;
   login: (user: User) => void;
