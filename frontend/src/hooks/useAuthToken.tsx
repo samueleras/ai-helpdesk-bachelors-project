@@ -19,8 +19,7 @@ const useAuthToken = () => {
       try {
         if (!instance.getActiveAccount())
           throw new InteractionRequiredAuthError("No active account. Log in.");
-        const response = await instance.acquireTokenSilent(tokenRequest);
-        console.log("Access Token:", response.accessToken);
+        await instance.acquireTokenSilent(tokenRequest);
       } catch (error) {
         if (error instanceof InteractionRequiredAuthError) {
           navigate("/");
