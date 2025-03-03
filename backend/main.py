@@ -178,11 +178,11 @@ async def init_ai_workflow(data: WorkflowRequestModel):
         conversation = data.conversation
         query_prompt = data.query_prompt
         ticket = data.ticket
-        excecution_count = data.excecution_count
+        execution_count = data.execution_count
 
         # Use the LangChain model to generate a response or a ticket
         response: WorkflowResponse = await langchain_model.initiate_workflow_async(
-            conversation, query_prompt, ticket, excecution_count
+            conversation, query_prompt, ticket, execution_count
         )
     except Exception as e:
         logger.error(f"Workflow execution failed: {str(e)}", exc_info=True)
@@ -196,7 +196,7 @@ async def init_ai_workflow(data: WorkflowRequestModel):
                 if attempts > 0:
                     response: WorkflowResponse = (
                         await langchain_model.initiate_workflow_async(
-                            conversation, query_prompt, ticket, excecution_count
+                            conversation, query_prompt, ticket, execution_count
                         )
                     )
 
@@ -215,7 +215,7 @@ async def init_ai_workflow(data: WorkflowRequestModel):
 
                 store_ticket_milvus(ticket_id, summary_vector, title)
 
-                return {"ticket_id": ticket_id, "ticket_content": content}
+                return {"llm_output": "", "ticket": True, "ticket_id": ticket_id}
 
             except Exception as e:
                 logger.error(f"Error on attempt {attempts + 1}: {e}", exc_info=True)
@@ -226,7 +226,11 @@ async def init_ai_workflow(data: WorkflowRequestModel):
             status_code=500, detail="Failed to process ticket after multiple attempts"
         )
 
-    return response
+    return {
+        "llm_output": response["llm_output"],
+        "ticket": response["ticket"],
+        "ticket_id": None,
+    }
 
 
 @app.get("/ticket/{id}")
