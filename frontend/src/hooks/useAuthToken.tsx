@@ -26,7 +26,7 @@ const useAuthToken = () => {
         instance.setActiveAccount(response.account);
         const accessToken = response.accessToken;
         const fetchedUser = await useUsersMe(accessToken);
-        login(fetchedUser);
+        login(fetchedUser, accessToken);
       } catch (error) {
         if (error instanceof InteractionRequiredAuthError) {
           navigate("/");
