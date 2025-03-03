@@ -17,6 +17,7 @@ const useAIWorkflow = (
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: false,
+    enabled: false,
   });
 };
 
