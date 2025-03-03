@@ -37,7 +37,6 @@ class AppConfig(TypedDict):
 
 class WorkflowRequest(TypedDict):
     conversation: List[Tuple[str, str]]
-    query_prompt: str
     ticket: bool
 
 

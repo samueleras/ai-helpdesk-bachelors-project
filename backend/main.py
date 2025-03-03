@@ -176,13 +176,12 @@ async def init_ai_workflow(data: WorkflowRequestModel):
     try:
         # Process input
         conversation = data.conversation
-        query_prompt = data.query_prompt
         ticket = data.ticket
         execution_count = data.execution_count
 
         # Use the LangChain model to generate a response or a ticket
         response: WorkflowResponse = await langchain_model.initiate_workflow_async(
-            conversation, query_prompt, ticket, execution_count
+            conversation, ticket, execution_count
         )
     except Exception as e:
         logger.error(f"Workflow execution failed: {str(e)}", exc_info=True)
@@ -196,7 +195,7 @@ async def init_ai_workflow(data: WorkflowRequestModel):
                 if attempts > 0:
                     response: WorkflowResponse = (
                         await langchain_model.initiate_workflow_async(
-                            conversation, query_prompt, ticket, execution_count
+                            conversation, ticket, execution_count
                         )
                     )
 

@@ -65,23 +65,6 @@ def initialize_langchain(config: AppConfig):
         cleaned_response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL)
         return cleaned_response.strip()
 
-    def retrieve_or_generate_query_prompt(state: GraphState):
-        logger.debug(
-            "retrieve_or_generate_query_prompt",
-        )
-        ticket = state["ticket"]
-        query_prompt = state["query_prompt"]
-        if ticket and query_prompt != "":
-            logger.debug(
-                "retrieve_documents",
-            )
-            return "retrieve_documents"
-        else:
-            logger.debug(
-                "generate_query_prompt",
-            )
-            return "generate_query_prompt"
-
     def generate_query_prompt(state: GraphState):
         input = state["input"]
         chat_history = state["chat_history"]
@@ -352,9 +335,6 @@ def initialize_langchain(config: AppConfig):
 
     # Define the nodes
     workflow.add_node(
-        "retrieve_or_generate_query_prompt", retrieve_or_generate_query_prompt
-    )  # decide retrieve or generate query prompt
-    workflow.add_node(
         "generate_query_prompt", generate_query_prompt
     )  # generate query prompt
     workflow.add_node("retrieve_documents", retrieve_documents)  # retrieve
@@ -379,14 +359,7 @@ def initialize_langchain(config: AppConfig):
     workflow.add_node("generate_ticket", generate_ticket)  # create ticket
 
     # Build graph
-    workflow.add_conditional_edges(
-        START,
-        retrieve_or_generate_query_prompt,
-        {
-            "generate_query_prompt": "generate_query_prompt",
-            "retrieve_documents": "retrieve_documents",
-        },
-    )
+    workflow.add_edge(START, "generate_query_prompt")
     workflow.add_edge("generate_query_prompt", "retrieve_documents")
     workflow.add_edge("retrieve_documents", "grade_documents")
     workflow.add_conditional_edges(
@@ -431,18 +404,16 @@ def initialize_langchain(config: AppConfig):
 
     async def initiate_workflow_async(
         conversation: List[Tuple[str, str]],
-        query_prompt: str,
         ticket: bool,
         excecution_count: int,
     ) -> WorkflowResponse:
         response = await asyncio.to_thread(
-            initiate_workflow, conversation, query_prompt, ticket, excecution_count
+            initiate_workflow, conversation, ticket, excecution_count
         )
         return response
 
     def initiate_workflow(
         conversation: List[Tuple[str, str]],
-        query_prompt: str,
         ticket: bool,
         excecution_count: int,
     ) -> WorkflowResponse:
@@ -457,7 +428,6 @@ def initialize_langchain(config: AppConfig):
                 {
                     "input": input,
                     "chat_history": chat_history,
-                    "query_prompt": query_prompt,
                     "ticket": ticket,
                     "excecution_count": excecution_count,
                 },
@@ -468,7 +438,6 @@ def initialize_langchain(config: AppConfig):
                 "ticket_title": state_dict.get("ticket_title", ""),
                 "ticket_content": state_dict.get("ticket_content", ""),
                 "ticket_summary": state_dict.get("ticket_summary", ""),
-                "query_prompt": state_dict.get("query_prompt", ""),
                 "ticket": state_dict["ticket"],
             }
             logger.info(

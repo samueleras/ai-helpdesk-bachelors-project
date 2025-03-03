@@ -4,7 +4,6 @@ from typing import List, Optional, Tuple
 
 class WorkflowRequestModel(BaseModel):
     conversation: List[Tuple[str, str]]
-    query_prompt: str = ""
     ticket: bool
     execution_count: int
 
