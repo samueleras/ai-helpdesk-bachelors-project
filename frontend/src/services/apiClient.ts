@@ -15,8 +15,10 @@ class APIClient<T> {
     this.endpoint = endpoint;
   }
 
-  get = (accessToken: string, config: AxiosRequestConfig = {}) => {
-    if (!accessToken) return {} as T;
+  get = async (accessToken: string, config: AxiosRequestConfig = {}) => {
+    if (!accessToken) {
+      return Promise.reject(new Error("User not authenticated."));
+    }
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${accessToken}`,
@@ -24,43 +26,54 @@ class APIClient<T> {
     return axiosInstance.get<T>(this.endpoint, config).then((res) => res.data);
   };
 
-  getAll = (accessToken: string, config: AxiosRequestConfig = {}) => {
-    if (!accessToken) return {} as T;
+  getAll = async (accessToken: string, config: AxiosRequestConfig = {}) => {
+    if (!accessToken) {
+      return Promise.reject(new Error("User not authenticated."));
+    }
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${accessToken}`,
     };
-    axiosInstance.get<T[]>(this.endpoint, config).then((res) => res.data);
+    return axiosInstance
+      .get<T[]>(this.endpoint, config)
+      .then((res) => res.data);
   };
 
-  getAllFiltered = (
+  getAllFiltered = async (
     filter: Filter,
     accessToken: string,
     config: AxiosRequestConfig = {}
   ) => {
-    if (!accessToken) return {} as T;
+    if (!accessToken) {
+      return Promise.reject(new Error("User not authenticated."));
+    }
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${accessToken}`,
     };
-    axiosInstance
+    return axiosInstance
       .post<T[]>(this.endpoint, filter, config)
       .then((res) => res.data);
   };
 
-  initAIWorkflow = (
+  initAIWorkflow = async (
     workflowRequest: WorkflowRequest,
     accessToken: string,
     config: AxiosRequestConfig = {}
   ) => {
-    if (!accessToken) return {} as T;
+    if (!accessToken) {
+      return Promise.reject(new Error("User not authenticated."));
+    }
     config.headers = {
       ...config.headers,
       Authorization: `Bearer ${accessToken}`,
     };
-    axiosInstance
-      .post<T[]>(this.endpoint, workflowRequest, config)
-      .then((res) => res.data);
+    const response = await axiosInstance.post<T>(
+      this.endpoint,
+      workflowRequest,
+      config
+    );
+    return response.data;
   };
 }
 
