@@ -63,8 +63,8 @@ const AIChatPage = () => {
 
   const handleSubmit = (event?: FormEvent) => {
     event?.preventDefault();
-    const inputValue = inputRef.current?.value;
-    if (inputValue && inputValue !== "") {
+    let inputValue = inputRef.current?.value || "Please create a Ticket.";
+    if (inputValue) {
       const updatedConversation: [string, string][] = [
         ...conversation,
         ["human", inputValue],
@@ -78,6 +78,9 @@ const AIChatPage = () => {
           ticket,
         };
       });
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
     }
   };
 
