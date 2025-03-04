@@ -3,6 +3,7 @@ import useAuthStore from "../stores/AuthStore";
 import { useNavigate } from "react-router-dom";
 import useAIWorkflow from "../hooks/useAIWorkflow";
 import useChatStore from "../stores/ChatStore";
+import ReactMarkdown from "react-markdown";
 
 const AIChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -101,9 +102,9 @@ const AIChatPage = () => {
       <h1>AIChatPage</h1>
       <div id="chat">
         {conversation.map((message, index) => (
-          <p key={index} className={message[0]}>
-            {message[1]}
-          </p>
+          <div key={index} className={message[0]}>
+            {<ReactMarkdown>{message[1]}</ReactMarkdown>}
+          </div>
         ))}
         {isFetching && <p>Fetching...</p>}
         {error && <p>Error: {error.message}</p>}
