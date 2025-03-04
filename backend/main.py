@@ -172,7 +172,9 @@ async def technician_route(
 
 
 @app.post("/init_ai_workflow")
-async def init_ai_workflow(data: WorkflowRequestModel):
+async def init_ai_workflow(
+    user: Annotated[User, Depends(verify_token)], data: WorkflowRequestModel
+):
     try:
         # Process input
         conversation = data.conversation
@@ -209,7 +211,7 @@ async def init_ai_workflow(data: WorkflowRequestModel):
 
                 # Store ticket in DB
                 ticket_id = insert_ticket(
-                    title, content, summary_vector, "test", config
+                    title, content, summary_vector, user.user_id, config
                 )
 
                 store_ticket_milvus(ticket_id, summary_vector, title)
