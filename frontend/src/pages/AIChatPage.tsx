@@ -1,21 +1,26 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { WorkflowRequest } from "../entities/WorkflowRequest";
 import useAuthStore from "../stores/AuthStore";
 import { useNavigate } from "react-router-dom";
 import useAIWorkflow from "../hooks/useAIWorkflow";
+import useChatStore from "../stores/ChatStore";
 
 const AIChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { accessToken } = useAuthStore();
-  const [conversation, setConversation] = useState<[string, string][]>([]);
-  const [executionCount, setExecutionCount] = useState<number>(0);
-  const [ticket, setTicket] = useState(false);
-  const [ticketButton, setTicketButton] = useState(false);
-  const [workflowRequest, setWorkflowRequest] = useState<WorkflowRequest>({
-    conversation: [],
-    execution_count: 0,
-    ticket: false,
-  });
+  const [isFirstRender, setIsFirstRender] = useState(true);
+  const {
+    conversation,
+    setConversation,
+    executionCount,
+    setExecutionCount,
+    ticket,
+    setTicket,
+    ticketButton,
+    setTicketButton,
+    workflowRequest,
+    setWorkflowRequest,
+    resetChat,
+  } = useChatStore();
   const navigate = useNavigate();
 
   const {
@@ -26,6 +31,10 @@ const AIChatPage = () => {
   } = useAIWorkflow(workflowRequest, accessToken);
 
   useEffect(() => {
+    if (isFirstRender) {
+      setIsFirstRender(false);
+      return;
+    }
     if (workflowResponse) {
       console.log(workflowResponse);
       if (workflowResponse.ticket_id) {
@@ -33,10 +42,9 @@ const AIChatPage = () => {
         return;
       }
       setConversation([...conversation, ["ai", workflowResponse.llm_output]]);
-      setExecutionCount((count) => count + 1);
+      setExecutionCount(executionCount + 1);
       if (workflowResponse.ticket) {
         if (workflowResponse.ticket && !ticket) {
-          console.log("toggle ticket button");
           setTicketButton(true);
           setExecutionCount(0);
         }
@@ -46,6 +54,10 @@ const AIChatPage = () => {
   }, [workflowResponse]);
 
   useEffect(() => {
+    if (isFirstRender) {
+      setIsFirstRender(false);
+      return;
+    }
     if (workflowRequest?.conversation.length != 0) {
       console.log(
         "Workflow Request:",
@@ -54,18 +66,6 @@ const AIChatPage = () => {
       refetch();
     }
   }, [workflowRequest]);
-
-  const handleChatReset = () => {
-    setConversation([]);
-    setExecutionCount(0);
-    setTicket(false);
-    setTicketButton(false);
-    setWorkflowRequest({
-      conversation: [],
-      execution_count: 0,
-      ticket: false,
-    });
-  };
 
   const handleTicketCreation = () => {
     setTicketButton(false);
@@ -86,13 +86,10 @@ const AIChatPage = () => {
       ["human", inputValue],
     ];
     setConversation(updatedConversation);
-    setWorkflowRequest((prev) => {
-      return {
-        ...prev,
-        conversation: updatedConversation,
-        execution_count: executionCount,
-        ticket,
-      };
+    setWorkflowRequest({
+      conversation: updatedConversation,
+      execution_count: executionCount,
+      ticket: ticket,
     });
     if (inputRef.current) {
       inputRef.current.value = "";
@@ -115,7 +112,7 @@ const AIChatPage = () => {
         <button
           id="btn-reset"
           type="button"
-          onClick={handleChatReset}
+          onClick={resetChat}
           disabled={isFetching}
         >
           Reset Chat
