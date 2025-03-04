@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import useAIWorkflow from "../hooks/useAiWorkflow";
 import { WorkflowRequest } from "../entities/WorkflowRequest";
 import useAuthStore from "../stores/AuthStore";
 import { useNavigate } from "react-router-dom";
+import useAIWorkflow from "../hooks/useAIWorkflow";
 
 const AIChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -15,7 +15,6 @@ const AIChatPage = () => {
     conversation: [],
     execution_count: 0,
     ticket: false,
-    query_prompt: "testtt",
   });
   const navigate = useNavigate();
 
@@ -58,29 +57,33 @@ const AIChatPage = () => {
 
   const handleTicketCreation = () => {
     setTicketButton(false);
-    handleSubmit();
+    handleSubmit("Please create a Ticket.");
   };
 
-  const handleSubmit = (event?: FormEvent) => {
-    event?.preventDefault();
-    let inputValue = inputRef.current?.value || "Please create a Ticket.";
-    if (inputValue) {
-      const updatedConversation: [string, string][] = [
-        ...conversation,
-        ["human", inputValue],
-      ];
-      setConversation(updatedConversation);
-      setWorkflowRequest((prev) => {
-        return {
-          ...prev,
-          conversation: updatedConversation,
-          execution_count: executionCount,
-          ticket,
-        };
-      });
-      if (inputRef.current) {
-        inputRef.current.value = "";
-      }
+  const handleSendMessage = (event: FormEvent) => {
+    //prevents page reload
+    event.preventDefault();
+    let inputValue = inputRef.current?.value;
+    //Only executes if inputValue is not an empty String
+    if (inputValue) handleSubmit(inputValue);
+  };
+
+  const handleSubmit = (inputValue: string) => {
+    const updatedConversation: [string, string][] = [
+      ...conversation,
+      ["human", inputValue],
+    ];
+    setConversation(updatedConversation);
+    setWorkflowRequest((prev) => {
+      return {
+        ...prev,
+        conversation: updatedConversation,
+        execution_count: executionCount,
+        ticket,
+      };
+    });
+    if (inputRef.current) {
+      inputRef.current.value = "";
     }
   };
 
@@ -96,12 +99,15 @@ const AIChatPage = () => {
         {isFetching && <p>Fetching...</p>}
         {error && <p>Error: {error.message}</p>}
       </div>
-      {ticketButton && (
-        <button id="buttonTicket" type="button" onClick={handleTicketCreation}>
-          Create Ticket
-        </button>
-      )}
-      <form onSubmit={handleSubmit}>
+      <div>
+        {ticketButton && (
+          <button id="btn-ticket" type="button" onClick={handleTicketCreation}>
+            Create Ticket
+          </button>
+        )}
+      </div>
+
+      <form onSubmit={handleSendMessage}>
         <label>Enter Question:</label>
         <input
           type="text"
@@ -111,7 +117,7 @@ const AIChatPage = () => {
           disabled={isFetching || ticketButton}
         />
         <button
-          id="btn-ticket"
+          id="btn-submit"
           type="submit"
           disabled={isFetching || ticketButton}
         >
