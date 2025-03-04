@@ -15,35 +15,89 @@ interface ChatStore {
   resetChat: () => void;
 }
 
-const useChatStore = create<ChatStore>((set) => ({
-  conversation: [],
-  executionCount: 0,
-  ticket: false,
-  ticketButton: false,
-  workflowRequest: {
-    conversation: [],
-    execution_count: 0,
-    ticket: false,
-  },
+interface ChatState {
+  conversation: [string, string][];
+  executionCount: number;
+  ticket: boolean;
+  ticketButton: boolean;
+  workflowRequest: WorkflowRequest;
+}
 
-  setConversation: (conversation) => set({ conversation }),
-  setExecutionCount: (count) => set({ executionCount: count }),
-  setTicket: (ticket) => set({ ticket }),
-  setTicketButton: (ticketButton) => set({ ticketButton }),
-  setWorkflowRequest: (request) => set({ workflowRequest: request }),
+const getChatStateFromLocalStorage = () => {
+  const chatState = localStorage.getItem("ChatState");
+  return chatState ? JSON.parse(chatState) : {};
+};
 
-  resetChat: () =>
-    set({
+const setChatStateFromLocalStorage = (state: ChatState) => {
+  localStorage.setItem("ChatState", JSON.stringify(state));
+};
+
+const useChatStore = create<ChatStore>((set) => {
+  const savedState = getChatStateFromLocalStorage();
+
+  return {
+    conversation: savedState.conversation || [],
+    executionCount: savedState.executionCount || 0,
+    ticket: savedState.ticket || false,
+    ticketButton: savedState.ticketButton || false,
+    workflowRequest: savedState.workflowRequest || {
       conversation: [],
-      executionCount: 0,
+      execution_count: 0,
       ticket: false,
-      ticketButton: false,
-      workflowRequest: {
-        conversation: [],
-        execution_count: 0,
-        ticket: false,
-      },
-    }),
-}));
+    },
+
+    setConversation: (conversation) =>
+      set((state) => {
+        const newState = { ...state, conversation };
+        setChatStateFromLocalStorage(newState);
+        return newState;
+      }),
+
+    setExecutionCount: (count) =>
+      set((state) => {
+        const newState = { ...state, executionCount: count };
+        setChatStateFromLocalStorage(newState);
+        return newState;
+      }),
+
+    setTicket: (ticket) =>
+      set((state) => {
+        const newState = { ...state, ticket };
+        setChatStateFromLocalStorage(newState);
+        return newState;
+      }),
+
+    setTicketButton: (ticketButton) =>
+      set((state) => {
+        const newState = { ...state, ticketButton };
+        setChatStateFromLocalStorage(newState);
+        return newState;
+      }),
+
+    setWorkflowRequest: (request) =>
+      set((state) => {
+        const newState = { ...state, workflowRequest: request };
+        setChatStateFromLocalStorage(newState);
+        return newState;
+      }),
+
+    resetChat: () =>
+      set(() => {
+        const newState = {
+          conversation: [],
+          executionCount: 0,
+          ticket: false,
+          ticketButton: false,
+          workflowRequest: {
+            conversation: [],
+            execution_count: 0,
+            ticket: false,
+          },
+        };
+        setChatStateFromLocalStorage(newState);
+        return newState;
+      }),
+  };
+});
 
 export default useChatStore;
