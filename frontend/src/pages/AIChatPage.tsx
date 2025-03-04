@@ -55,6 +55,18 @@ const AIChatPage = () => {
     }
   }, [workflowRequest]);
 
+  const handleChatReset = () => {
+    setConversation([]);
+    setExecutionCount(0);
+    setTicket(false);
+    setTicketButton(false);
+    setWorkflowRequest({
+      conversation: [],
+      execution_count: 0,
+      ticket: false,
+    });
+  };
+
   const handleTicketCreation = () => {
     setTicketButton(false);
     handleSubmit("Please create a Ticket.");
@@ -100,6 +112,14 @@ const AIChatPage = () => {
         {error && <p>Error: {error.message}</p>}
       </div>
       <div>
+        <button
+          id="btn-reset"
+          type="button"
+          onClick={handleChatReset}
+          disabled={isFetching}
+        >
+          Reset Chat
+        </button>
         {ticketButton && (
           <button id="btn-ticket" type="button" onClick={handleTicketCreation}>
             Create Ticket
