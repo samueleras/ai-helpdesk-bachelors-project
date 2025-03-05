@@ -1,5 +1,5 @@
 export interface User {
   user_id?: string;
-  user?: string;
+  user_name?: string;
   group?: string;
 }
