@@ -1,8 +1,9 @@
 import ChatMessage from "@/components/ChatMessage";
-import { Box, Button, Flex, Input, Spinner } from "@chakra-ui/react";
+import { Avatar, Box, Button, Flex, Input } from "@chakra-ui/react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
+import { BeatLoader } from "react-spinners";
 import useAIWorkflow from "../hooks/useAIWorkflow";
 import useAuthStore from "../stores/AuthStore";
 import useChatStore from "../stores/ChatStore";
@@ -41,6 +42,7 @@ const AIChatPage = () => {
     if (workflowResponse) {
       console.log(workflowResponse);
       if (workflowResponse.ticket_id) {
+        resetChat();
         navigate(`/ticket/${workflowResponse.ticket_id}`);
         return;
       }
@@ -108,17 +110,18 @@ const AIChatPage = () => {
       flexDirection={"column"}
       gap="3"
     >
+      {/* Chat Window */}
       <Box
-        width={{ base: "100vw", sm: "80vw" }}
-        height="80vh"
+        width={{ base: "95vw", sm: "80vw", xl: "60vw" }}
+        height="85vh"
         border="1px solid gray"
         backgroundColor={"gray.100"}
         borderRadius={".5rem"}
         position={"relative"}
       >
         <Flex
-          overflowY="auto"
-          h={`calc(80vh - 3.2rem)`}
+          overflowY="scroll"
+          h={`calc(85vh - 3.2rem)`}
           p="3"
           gap={3}
           flexDirection={"column"}
@@ -131,9 +134,18 @@ const AIChatPage = () => {
               key={index}
             />
           ))}
-          {isFetching && <Spinner />}
+          {/* Writing Animation */}
+          {isFetching && (
+            <Flex alignItems={"center"} gap={2}>
+              <Avatar.Root>
+                <Avatar.Fallback name={"A I"} />
+              </Avatar.Root>
+              <BeatLoader size={8} color="gray" />
+            </Flex>
+          )}
           {error && <p>Error: {error.message}</p>}
         </Flex>
+        {/* Input Field */}
         <Box position={"absolute"} bottom={0} w="100%">
           <form onSubmit={handleSendMessage}>
             <Flex gap={1}>
@@ -160,6 +172,7 @@ const AIChatPage = () => {
           </form>
         </Box>
       </Box>
+      {/* Buttons */}
       <Box spaceX={2}>
         <Button
           id="btn-reset"
