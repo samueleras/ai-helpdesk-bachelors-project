@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import useAIWorkflow from "../hooks/useAIWorkflow";
 import useChatStore from "../stores/ChatStore";
 import ReactMarkdown from "react-markdown";
+import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
+import { IoSend } from "react-icons/io5";
 
 const AIChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -98,52 +100,76 @@ const AIChatPage = () => {
   };
 
   return (
-    <div>
-      <h1>AIChatPage</h1>
-      <div id="chat">
-        {conversation.map((message, index) => (
-          <div key={index} className={message[0]}>
-            {<ReactMarkdown>{message[1]}</ReactMarkdown>}
-          </div>
-        ))}
-        {isFetching && <p>Fetching...</p>}
-        {error && <p>Error: {error.message}</p>}
-      </div>
-      <div>
-        <button
+    <Flex
+      backgroundColor="darkslategray"
+      h={`calc(100vh - 4rem)`}
+      justifyContent="center"
+      alignItems={"center"}
+      flexDirection={"column"}
+      gap="3"
+    >
+      <Box
+        width={{ base: "100vw", sm: "80vw" }}
+        height="80vh"
+        border="1px solid gray"
+        backgroundColor={"gray.100"}
+        borderRadius={".5rem"}
+        position={"relative"}
+      >
+        <Box overflowY="auto" h={`calc(80vh - 3.2rem)`} p="3">
+          {conversation.map((message, index) => (
+            <Box key={index} className={message[0]}>
+              {<ReactMarkdown>{message[1]}</ReactMarkdown>}
+            </Box>
+          ))}
+          {isFetching && <p>Fetching...</p>}
+          {error && <p>Error: {error.message}</p>}
+        </Box>
+        <Box position={"absolute"} bottom={0} w="100%">
+          <form onSubmit={handleSendMessage}>
+            <Flex gap={1}>
+              <Input
+                type="text"
+                id="input"
+                name="input"
+                ref={inputRef}
+                disabled={isFetching || ticketButton}
+                backgroundColor={"gray.100"}
+                placeholder="Prompt your issue ..."
+                height="3rem"
+              />
+              <Button
+                id="btn-submit"
+                type="submit"
+                disabled={isFetching || ticketButton}
+                height="3rem"
+                backgroundColor={"blue"}
+              >
+                <IoSend />
+              </Button>
+            </Flex>
+          </form>
+        </Box>
+      </Box>
+      <Box>
+        <Button
           id="btn-reset"
           type="button"
           onClick={resetChat}
           disabled={isFetching}
         >
           Reset Chat
-        </button>
+        </Button>
         {ticketButton && (
-          <button id="btn-ticket" type="button" onClick={handleTicketCreation}>
+          <Button id="btn-ticket" type="button" onClick={handleTicketCreation}>
             Create Ticket
-          </button>
+          </Button>
         )}
-      </div>
-
-      <form onSubmit={handleSendMessage}>
-        <label>Enter Question:</label>
-        <input
-          type="text"
-          id="input"
-          name="input"
-          ref={inputRef}
-          disabled={isFetching || ticketButton}
-        />
-        <button
-          id="btn-submit"
-          type="submit"
-          disabled={isFetching || ticketButton}
-        >
-          Submit
-        </button>
-      </form>
-      <p id="response"></p>
-    </div>
+      </Box>
+      {/* <Box id="chat">
+        
+      </Box> */}
+    </Flex>
   );
 };
 
