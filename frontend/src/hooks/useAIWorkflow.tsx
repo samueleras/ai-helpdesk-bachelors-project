@@ -19,6 +19,7 @@ const useAIWorkflow = (
     refetchInterval: false,
     refetchOnMount: false,
     enabled: false,
+    gcTime: 0,
   });
 };
 
