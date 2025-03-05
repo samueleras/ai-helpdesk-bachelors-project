@@ -1,15 +1,15 @@
+import ChatMessage from "@/components/ChatMessage";
+import { Box, Button, Flex, Input, Spinner } from "@chakra-ui/react";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import useAuthStore from "../stores/AuthStore";
+import { IoSend } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import useAIWorkflow from "../hooks/useAIWorkflow";
+import useAuthStore from "../stores/AuthStore";
 import useChatStore from "../stores/ChatStore";
-import ReactMarkdown from "react-markdown";
-import { Box, Button, Flex, Input, Text } from "@chakra-ui/react";
-import { IoSend } from "react-icons/io5";
 
 const AIChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { accessToken } = useAuthStore();
+  const { accessToken, user } = useAuthStore();
   const [isFirstRender, setIsFirstRender] = useState(true);
   const {
     conversation,
@@ -116,15 +116,24 @@ const AIChatPage = () => {
         borderRadius={".5rem"}
         position={"relative"}
       >
-        <Box overflowY="auto" h={`calc(80vh - 3.2rem)`} p="3">
+        <Flex
+          overflowY="auto"
+          h={`calc(80vh - 3.2rem)`}
+          p="3"
+          gap={3}
+          flexDirection={"column"}
+        >
           {conversation.map((message, index) => (
-            <Box key={index} className={message[0]}>
-              {<ReactMarkdown>{message[1]}</ReactMarkdown>}
-            </Box>
+            <ChatMessage
+              name={message[0] == "ai" ? "AI" : user.user_name ?? "User"}
+              message_from_current_user={message[0] !== "ai"}
+              message={message[1]}
+              key={index}
+            />
           ))}
-          {isFetching && <p>Fetching...</p>}
+          {isFetching && <Spinner />}
           {error && <p>Error: {error.message}</p>}
-        </Box>
+        </Flex>
         <Box position={"absolute"} bottom={0} w="100%">
           <form onSubmit={handleSendMessage}>
             <Flex gap={1}>
@@ -151,7 +160,7 @@ const AIChatPage = () => {
           </form>
         </Box>
       </Box>
-      <Box>
+      <Box spaceX={2}>
         <Button
           id="btn-reset"
           type="button"
@@ -166,9 +175,6 @@ const AIChatPage = () => {
           </Button>
         )}
       </Box>
-      {/* <Box id="chat">
-        
-      </Box> */}
     </Flex>
   );
 };
