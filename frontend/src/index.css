@@ -1,0 +1,7 @@
+a.link.active {
+  color: blue;
+}
+
+.active > .link-effect {
+  display: block;
+}
