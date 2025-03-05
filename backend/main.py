@@ -211,7 +211,7 @@ async def init_ai_workflow(
 
                 # Store ticket in DB
                 ticket_id = insert_ticket(
-                    title, content, summary_vector, user.us, config
+                    title, content, summary_vector, user.user_id, config
                 )
 
                 store_ticket_milvus(ticket_id, summary_vector, title)
