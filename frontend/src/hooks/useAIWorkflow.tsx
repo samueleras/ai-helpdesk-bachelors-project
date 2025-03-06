@@ -3,7 +3,7 @@ import APIClient from "../services/apiClient";
 import { WorkflowResponse } from "../entities/WorkflowRepsonse";
 import { WorkflowRequest } from "../entities/WorkflowRequest";
 
-const workflowClient = new APIClient<WorkflowResponse>("/init_ai_workflow");
+const workflowClient = new APIClient<WorkflowResponse>("/api/init_ai_workflow");
 
 const useAIWorkflow = (
   workflowRequest: WorkflowRequest,

@@ -146,7 +146,7 @@ def check_user_group(required_group_id: str) -> Callable[[User], User]:
 
 
 # Return user properties for frontend, only possible if token is valid => User authenticated
-@app.get("/users/me")
+@app.get("/api/users/me")
 async def read_users_me(user: Annotated[User, Depends(verify_token)]):
     try:
         if not is_azure_user_in_db(user.user_id, config):
@@ -157,21 +157,7 @@ async def read_users_me(user: Annotated[User, Depends(verify_token)]):
     return user
 
 
-# Protected Route for Regular Users
-@app.get("/user")
-async def user_route(user: Annotated[User, Depends(check_user_group("users"))]):
-    return {"message": "Welcome, regular user!", "user": user}
-
-
-# Protected Route for Technicians
-@app.get("/technician")
-async def technician_route(
-    user: Annotated[User, Depends(check_user_group("technicians"))]
-):
-    return {"message": "Welcome, Technician!", "user": user}
-
-
-@app.post("/init_ai_workflow")
+@app.post("/api/init_ai_workflow")
 async def init_ai_workflow(
     user: Annotated[User, Depends(verify_token)], data: WorkflowRequestModel
 ):
@@ -234,7 +220,7 @@ async def init_ai_workflow(
     }
 
 
-@app.get("/ticket/{id}")
+@app.get("/api/ticket/{id}")
 async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int):
     try:
         ticket = get_ticket(id, user, config)
@@ -253,7 +239,7 @@ async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int
         raise HTTPException(status_code=500, detail="Failed to retrieve ticket")
 
 
-@app.post("/tickets")
+@app.post("/api/tickets")
 def get_tickets(
     user: Annotated[User, Depends(check_user_group("technicians"))],
     filter_data: TicketFilter,
@@ -262,15 +248,15 @@ def get_tickets(
     return tickets
 
 
-@app.get("/my-tickets")
+@app.get("/api/my-tickets")
 def get_my_tickets(user: Annotated[User, Depends(check_user_group("technicians"))]):
     tickets = get_user_tickets(user, config)
     return tickets
 
 
-@app.get("/technicians")
+@app.get("/api/technicians")
 async def get_technicians(
-    user: Annotated[User, Depends(check_user_group("technicians"))]
+    user: Annotated[User, Depends(check_user_group("technicians"))],
 ):
     try:
         technicians = get_technicians(config)
