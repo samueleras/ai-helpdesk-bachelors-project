@@ -86,7 +86,7 @@ def get_ticket_messages(ticket_id: int, config: AppConfig) -> List[TicketMessage
     try:
         cursor = cnx.cursor(dictionary=True)
 
-        query = "SELECT m.message, u.user_name as author_name, u.user_group as group, m.created_at FROM ticket_messages m INNER JOIN azure_users u ON m.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
+        query = "SELECT m.message, u.user_name as author_name, u.user_group as `group`, m.created_at FROM ticket_messages m INNER JOIN azure_users u ON m.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
         cursor.execute(query, (ticket_id,))
         messages = cursor.fetchall() or []
 
@@ -107,7 +107,7 @@ def get_ticket_messages(ticket_id: int, config: AppConfig) -> List[TicketMessage
 def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
     cnx = connect_to_mysql(config)
     try:
-        cursor = cnx.cursor()
+        cursor = cnx.cursor(dictionary=True)
 
         query = "SELECT ticket_id, title, content, summary_vector, creation_date, closed_date, u.user_name as author_name, a.user_name as assignee_name FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE ticket_id = %s"
         cursor.execute(query, (ticket_id,))
