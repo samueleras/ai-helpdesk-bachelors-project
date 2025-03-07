@@ -225,8 +225,8 @@ async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int
     try:
         ticket = get_ticket(id, user, config)
         # Only allow the request for the ticket author and technicians
-        if user.user_id != ticket["author_id"]:
-            if user.group != "technician":
+        if user.user_name != ticket["author_name"]:
+            if user.group != "technicians":
                 logger.warning(
                     "Unauthorized ticket access. User is not the ticket author or part of the technicians group.",
                     exc_info=True,
