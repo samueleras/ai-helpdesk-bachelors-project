@@ -1,3 +1,4 @@
+import logging
 import json
 import os
 from typing import List
@@ -5,8 +6,7 @@ import mysql.connector
 from mysql.connector import errorcode
 from custom_types import AppConfig, Technician, Ticket, TicketMessage
 from ai_system.vectordb import retrieve_similar_tickets_milvus
-from backend.pydantic_models import TicketFilter, User
-import logging
+from backend.pydantic_models import NewTicketMessage, TicketFilter, User
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,13 @@ def insert_ticket(
 ) -> int:
     cnx = connect_to_mysql(config)
 
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
     try:
         cursor = cnx.cursor()
         summary_json = json.dumps(summary_vector)
@@ -83,6 +90,14 @@ def insert_ticket(
 
 def get_ticket_messages(ticket_id: int, config: AppConfig) -> List[TicketMessage]:
     cnx = connect_to_mysql(config)
+
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
     try:
         cursor = cnx.cursor(dictionary=True)
 
@@ -106,6 +121,14 @@ def get_ticket_messages(ticket_id: int, config: AppConfig) -> List[TicketMessage
 
 def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
     cnx = connect_to_mysql(config)
+
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
     try:
         cursor = cnx.cursor(dictionary=True)
 
@@ -139,8 +162,59 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
         cnx.close()
 
 
+def insert_ticket_message(
+    new_ticket_message: NewTicketMessage, user: User, config: AppConfig
+) -> None:
+    cnx = connect_to_mysql(config)
+
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
+    cursor = cnx.cursor()
+
+    try:
+        query = "INSERT INTO ticket_messages (ticket_id, author_id, message, created_at) VALUES (%s, %s, %s, %s)"
+        values = (
+            new_ticket_message.ticket_id,
+            user.user_id,
+            new_ticket_message.message,
+            new_ticket_message.created_at,
+        )
+        cursor.execute(query, values)
+        cnx.commit()
+        logger.info(
+            f"Ticket {new_ticket_message.ticket_id}: Added new Ticket Message of user {user.user_name} into database",
+        )
+
+    except Exception as e:
+        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
+        raise RuntimeError(f"Database error: {e}") from e
+
+    finally:
+        cursor.close()
+        cnx.close()
+
+    return None
+
+
 def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[Ticket]:
     cnx = connect_to_mysql(config)
+
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
     try:
         cursor = cnx.cursor(dictionary=True)
 
@@ -175,6 +249,14 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[T
 
 def get_user_tickets(user: User, config: AppConfig) -> List[Ticket]:
     cnx = connect_to_mysql(config)
+
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
     try:
         cursor = cnx.cursor(dictionary=True)
 
@@ -202,6 +284,14 @@ def get_user_tickets(user: User, config: AppConfig) -> List[Ticket]:
 
 def get_technicians(config: AppConfig) -> List[Technician]:
     cnx = connect_to_mysql(config)
+
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
     try:
         cursor = cnx.cursor(dictionary=True)
 
@@ -227,6 +317,7 @@ def insert_azure_user(
     user_id: str, user_name: str, user_group: str, config: AppConfig
 ) -> None:
     cnx = connect_to_mysql(config)
+
     if not cnx:
         logger.error(
             "Database connection failed",
@@ -265,8 +356,13 @@ def insert_azure_user(
 
 def is_azure_user_in_db(user_id: str, config: AppConfig) -> bool:
     cnx = connect_to_mysql(config)
+
     if not cnx:
-        return {"error": "Database connection failed"}
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
 
     cursor = cnx.cursor()
     try:
