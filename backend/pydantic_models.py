@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 from typing import List, Optional, Tuple
 
@@ -16,3 +17,9 @@ class User(BaseModel):
 
 class TicketFilter(BaseModel):
     assignee_id: Optional[str] = None
+
+
+class NewTicketMessage(BaseModel):
+    ticket_id: int
+    message: str
+    created_at: datetime

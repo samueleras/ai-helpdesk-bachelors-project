@@ -1,4 +1,4 @@
-from contextlib import asynccontextmanager
+import logging
 import json
 from logging.handlers import RotatingFileHandler
 import os
@@ -8,21 +8,26 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from ai_system.vectordb import initialize_milvus, store_ticket_milvus, embed_summary
 from ai_system.ai_system import initialize_langchain
-from custom_types import WorkflowResponse, AppConfig
+from custom_types import TicketMessage, WorkflowResponse, AppConfig
 from dotenv import load_dotenv
-from backend.pydantic_models import TicketFilter, User, WorkflowRequestModel
+from backend.pydantic_models import (
+    NewTicketMessage,
+    TicketFilter,
+    User,
+    WorkflowRequestModel,
+)
 from utils import load_json
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from typing import Annotated, Callable
 import requests
 import jwt
-import logging
 from backend.relationaldb import (
     get_filtered_tickets,
     get_user_tickets,
     insert_ticket,
     insert_azure_user,
+    insert_ticket_message,
     is_azure_user_in_db,
     get_ticket,
 )
@@ -55,6 +60,8 @@ logging.basicConfig(
 # Add file handler to Uvicorn loggers
 uvicorn_logger = logging.getLogger("uvicorn")
 uvicorn_logger.addHandler(file_handler)
+
+logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -239,19 +246,43 @@ async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int
         raise HTTPException(status_code=500, detail="Failed to retrieve ticket")
 
 
+@app.post("/api/insert-ticket-message")
+def insert_ticket_message_db(
+    user: Annotated[User, Depends(verify_token)],
+    new_ticket_message: NewTicketMessage,
+):
+    try:
+        insert_ticket_message(new_ticket_message, user, config)
+        return
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to insert ticket message")
+
+
 @app.post("/api/tickets")
 def get_tickets(
     user: Annotated[User, Depends(check_user_group("technicians"))],
     filter_data: TicketFilter,
 ):
-    tickets = get_filtered_tickets(filter_data, config)
-    return tickets
+    try:
+        tickets = get_filtered_tickets(filter_data, config)
+        return tickets
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to retrieve tickets")
 
 
 @app.get("/api/my-tickets")
 def get_my_tickets(user: Annotated[User, Depends(check_user_group("technicians"))]):
-    tickets = get_user_tickets(user, config)
-    return tickets
+    try:
+        tickets = get_user_tickets(user, config)
+        return tickets
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to retrieve tickets")
 
 
 @app.get("/api/technicians")
