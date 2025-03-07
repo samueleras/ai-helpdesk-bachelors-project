@@ -75,12 +75,10 @@ const TicketPage = () => {
         </Heading>
         <TextDivider />
         <Box>
-          <Text>User: {ticket?.author_name}</Text>
-          <Text>Ticket ID: {ticket?.ticket_id}</Text>
-          <Text>
-            Creation Date:
-            {dateToString(ticket?.creation_date)}
-          </Text>
+          <Text>{`User: ${ticket?.author_name}`}</Text>
+          <Text>{`Assignee: ${ticket?.assignee_name || "unassigned"}`}</Text>
+          <Text>{`Ticket ID: ${ticket?.ticket_id}`}</Text>
+          <Text>{"Creation Date: " + dateToString(ticket?.creation_date)}</Text>
         </Box>
         <TextDivider />
         <Grid gap="1rem">
