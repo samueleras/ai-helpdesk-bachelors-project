@@ -26,6 +26,7 @@ const ChatMessage = ({
       }
       justifyItems={message_from_current_user ? "end" : "start"}
       gap={2}
+      marginBottom={"1rem"}
     >
       <GridItem area={"avatar"}>
         <Avatar.Root>
