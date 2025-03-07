@@ -40,12 +40,19 @@ const TicketPage = () => {
   return (
     <Grid
       p={"2rem"}
-      h={`calc(100vh - 4rem)`}
+      h={{ lg: `calc(100vh - 4rem)` }}
       gap={"2rem"}
       gridTemplateColumns={{ base: "1fr", lg: "50% 50%" }}
       maxWidth="calc(100% - 2rem)"
     >
-      <Grid backgroundColor={"white"} overflow={"scroll"} p="2rem" gap="1rem">
+      <Grid
+        backgroundColor={"white"}
+        overflow={{ base: "none", lg: "auto" }}
+        p="2rem"
+        gap="1rem"
+        border="1px solid gray"
+        borderRadius={".5rem"}
+      >
         <Heading>
           <ReactMarkdown>
             {ticket?.title.replace(/\\n/g, "\n").replace(/"/g, "")}
@@ -82,6 +89,7 @@ const TicketPage = () => {
         <Box
           width={"100%"}
           height={"100%"}
+          minHeight={"85vh"}
           border="1px solid gray"
           backgroundColor={"gray.100"}
           borderRadius={".5rem"}
