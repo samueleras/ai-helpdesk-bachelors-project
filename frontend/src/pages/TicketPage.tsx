@@ -8,18 +8,23 @@ import {
   Input,
   Text,
 } from "@chakra-ui/react";
-import { FormEvent, useRef } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
 import { useParams } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
 import useTicket from "@/hooks/useTicket";
 import ReactMarkdown from "react-markdown";
-import { format } from "date-fns";
 import TextDivider from "@/components/TextDivider";
+import { dateToString } from "@/services/dateToString";
 
 const TicketPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { accessToken, user } = useAuthStore();
+  const [_, setRerender] = useState(0);
+
+  const forceRerender = () => {
+    setRerender((prev) => prev + 1); // Changing state forces a re-render
+  };
 
   const params = useParams();
   if (!params.id) {
@@ -31,7 +36,17 @@ const TicketPage = () => {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     let inputValue = inputRef.current?.value;
-    console.log(inputValue);
+    let new_ticket_message = {
+      message: inputValue || "",
+      author_name: user.user_name,
+      group: user.group,
+      created_at: new Date(),
+    };
+    /* optimistic update displays new message before it is stored in database to prevent delay */
+    inputValue &&
+      ticket?.ticket_messages.push(new_ticket_message) &&
+      forceRerender();
+    /* post into db and refetch() */
     if (inputRef.current) {
       inputRef.current.value = "";
     }
@@ -64,9 +79,7 @@ const TicketPage = () => {
           <Text>Ticket ID: {ticket?.ticket_id}</Text>
           <Text>
             Creation Date:
-            {ticket?.creation_date
-              ? format(new Date(ticket.creation_date), "MMMM do, yyyy h:mm a")
-              : "N/A"}
+            {dateToString(ticket?.creation_date)}
           </Text>
         </Box>
         <TextDivider />
@@ -102,12 +115,16 @@ const TicketPage = () => {
             gap={3}
             flexDirection={"column"}
           >
+            {ticket?.ticket_messages.length === 0 &&
+              user.group === "technicians" &&
+              "A Technician will will handle this Ticket soon as possible."}
             {ticket?.ticket_messages.map((ticket_message, index) => (
               <ChatMessage
                 name={ticket_message.author_name}
                 message_from_current_user={
                   ticket_message.author_name === user.user_name
                 }
+                date={dateToString(ticket_message.created_at)}
                 message={ticket_message.message}
                 key={index}
               />
