@@ -8,11 +8,15 @@ interface AuthStore {
 }
 
 const useAuthStore = create<AuthStore>((set) => ({
-  user: {},
+  user: { user_name: "", group: "", user_id: "" },
   accessToken: "",
   login: (user: User, accessToken: string) =>
     set(() => ({ user, accessToken })),
-  logout: () => set(() => ({ user: {}, accessToken: "" })),
+  logout: () =>
+    set(() => ({
+      user: { user_name: "", group: "", user_id: "" },
+      accessToken: "",
+    })),
 }));
 
 export default useAuthStore;
