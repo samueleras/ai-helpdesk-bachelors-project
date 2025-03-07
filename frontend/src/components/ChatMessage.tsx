@@ -33,7 +33,13 @@ const ChatMessage = ({
         </Avatar.Root>
       </GridItem>
       <GridItem area={"message"} width={"85%"}>
-        <Box backgroundColor={"gray.300"} p={"2"} borderRadius={"1rem"}>
+        <Box
+          backgroundColor={"gray.300"}
+          p={"2"}
+          borderRadius={"1rem"}
+          paddingBottom={"1rem"}
+          paddingInline={"1rem"}
+        >
           <Text color="darkslateblue" fontWeight={"bold"}>
             {name}
           </Text>
