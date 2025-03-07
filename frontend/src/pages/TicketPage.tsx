@@ -1,4 +1,10 @@
 import ChatMessage from "@/components/ChatMessage";
+import TextDivider from "@/components/TextDivider";
+import { NewTicketMessage } from "@/entities/NewTicketMessage";
+import { TicketMessage } from "@/entities/Ticket";
+import useInsertTicketMessage from "@/hooks/useInsertTicketMessage";
+import useTicket from "@/hooks/useTicket";
+import { dateToString } from "@/services/dateToString";
 import {
   Box,
   Button,
@@ -10,43 +16,51 @@ import {
 } from "@chakra-ui/react";
 import { FormEvent, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
+import ReactMarkdown from "react-markdown";
 import { useParams } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
-import useTicket from "@/hooks/useTicket";
-import ReactMarkdown from "react-markdown";
-import TextDivider from "@/components/TextDivider";
-import { dateToString } from "@/services/dateToString";
 
 const TicketPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { accessToken, user } = useAuthStore();
   const [_, setRerender] = useState(0);
-
-  const forceRerender = () => {
-    setRerender((prev) => prev + 1); // Changing state forces a re-render
-  };
-
   const params = useParams();
   if (!params.id) {
     throw new Error("ID is undefined");
   }
-
   const { data: ticket, error } = useTicket(params.id, accessToken);
+  const forceRerender = () => {
+    setRerender((prev) => prev + 1); // Changing state forces a re-render
+  };
+  const { mutate } = useInsertTicketMessage();
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
     let inputValue = inputRef.current?.value;
-    let new_ticket_message = {
-      message: inputValue || "",
-      author_name: user.user_name,
-      group: user.group,
-      created_at: new Date(),
-    };
-    /* optimistic update displays new message before it is stored in database to prevent delay */
-    inputValue &&
-      ticket?.ticket_messages.push(new_ticket_message) &&
-      forceRerender();
-    /* post into db and refetch() */
+    if (inputValue) {
+      let now = new Date();
+      let newTicketMessageDisplayFormat: TicketMessage = {
+        message: inputValue,
+        author_name: user.user_name,
+        group: user.group,
+        created_at: now,
+      };
+      /* optimistic update displays new message before it is stored in database to prevent delay */
+      ticket?.ticket_messages.push(newTicketMessageDisplayFormat) &&
+        forceRerender();
+      /* insert into database by calling api via mutationQuery */
+      let newTicketMessageInsertFormat: NewTicketMessage = {
+        ticket_id: Number(params.id),
+        message: inputValue,
+        created_at: now,
+      };
+      if (params.id !== undefined) {
+        mutate({
+          newTicketMessage: newTicketMessageInsertFormat,
+          accessToken: accessToken,
+        });
+      }
+    }
     if (inputRef.current) {
       inputRef.current.value = "";
     }
@@ -89,76 +103,74 @@ const TicketPage = () => {
         </Grid>
         <Button mt="1rem">Show Similar Tickets</Button>
       </Grid>
-      <Flex
-        justifyContent="center"
-        alignItems={"center"}
-        flexDirection={"column"}
-        gap="3"
+      {/* Chat Window incl Input*/}
+      <Box
         width={"100%"}
         height={"100%"}
+        border="1px solid gray"
+        backgroundColor={"gray.100"}
+        borderRadius={".5rem"}
+        position={"relative"}
+        overflow="hidden"
       >
         {/* Chat Window */}
-        <Box
-          width={"100%"}
-          height={"100%"}
-          minHeight={"85vh"}
-          border="1px solid gray"
-          backgroundColor={"gray.100"}
-          borderRadius={".5rem"}
-          position={"relative"}
+        <Flex
+          overflowY="scroll"
+          h={`calc(100% - 4rem)`}
+          p="3"
+          flexDirection={"column"}
         >
-          <Flex
-            overflowY="scroll"
-            h={`calc(100% - 3.2rem)`}
-            p="3"
-            flexDirection={"column"}
-          >
-            {ticket?.ticket_messages.length === 0 &&
-              user.group === "technicians" &&
-              "A Technician will will handle this Ticket soon as possible."}
-            {ticket?.ticket_messages.map((ticket_message, index) => (
-              <ChatMessage
-                name={ticket_message.author_name}
-                message_from_current_user={
-                  ticket_message.author_name === user.user_name
+          {ticket?.ticket_messages.length === 0 &&
+            user.group === "technicians" &&
+            "A Technician will will handle this Ticket soon as possible."}
+          {ticket?.ticket_messages.map((ticket_message, index) => (
+            <ChatMessage
+              name={ticket_message.author_name}
+              message_from_current_user={
+                ticket_message.author_name === user.user_name
+              }
+              date={dateToString(ticket_message.created_at)}
+              message={ticket_message.message}
+              key={index}
+            />
+          ))}
+          {error && <p>Error: {error.message}</p>}
+        </Flex>
+        {/* Input Field */}
+        <Box
+          position={"absolute"}
+          bottom={0}
+          w="100%"
+          backgroundColor={"gray.200"}
+          p="0.5rem"
+        >
+          <form onSubmit={handleSubmit}>
+            <Flex gap={1}>
+              <Input
+                type="text"
+                id="input"
+                name="input"
+                ref={inputRef}
+                backgroundColor={"gray.100"}
+                placeholder={
+                  user.group == "technicians"
+                    ? "Ask for Details or propose a Solution ..."
+                    : "Provide more Ticket details ..."
                 }
-                date={dateToString(ticket_message.created_at)}
-                message={ticket_message.message}
-                key={index}
+                height="3rem"
               />
-            ))}
-            {error && <p>Error: {error.message}</p>}
-          </Flex>
-          {/* Input Field */}
-          <Box position={"absolute"} bottom={0} w="100%">
-            <form onSubmit={handleSubmit}>
-              <Flex gap={1}>
-                <Input
-                  type="text"
-                  id="input"
-                  name="input"
-                  ref={inputRef}
-                  backgroundColor={"gray.100"}
-                  placeholder={
-                    user.group == "technicians"
-                      ? "Ask for Details or propose a Solution ..."
-                      : "Provide more Ticket details ..."
-                  }
-                  height="3rem"
-                />
-                <Button
-                  id="btn-submit"
-                  type="submit"
-                  height="3rem"
-                  backgroundColor={"blue"}
-                >
-                  <IoSend />
-                </Button>
-              </Flex>
-            </form>
-          </Box>
+              <Button
+                id="btn-submit"
+                type="submit"
+                height="3rem"
+                backgroundColor={"blue"}
+              >
+                <IoSend />
+              </Button>
+            </Flex>
+          </form>
         </Box>
-      </Flex>
+      </Box>
     </Grid>
   );
 };
