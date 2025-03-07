@@ -92,6 +92,23 @@ class APIClient<T> {
     );
     return response.data;
   };
+
+  mutate = async (
+    accessToken: string,
+    config: AxiosRequestConfig = {},
+    dataObj: {}
+  ) => {
+    if (!accessToken) {
+      return Promise.reject(new Error("User not authenticated."));
+    }
+    config.headers = {
+      ...config.headers,
+      Authorization: `Bearer ${accessToken}`,
+    };
+    return axiosInstance
+      .post<T>(this.endpoint, dataObj, config)
+      .then((res) => res.data);
+  };
 }
 
 export default APIClient;
