@@ -36,6 +36,7 @@ export function Navbar() {
       top={0}
       zIndex={1000}
       h={"4rem"}
+      backgroundColor={"white"}
     >
       <Flex
         justify="space-between"
