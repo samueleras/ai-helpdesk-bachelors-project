@@ -54,11 +54,12 @@ const TicketPage = () => {
 
   return (
     <Grid
-      p={"2rem"}
+      paddingBlock={"2rem"}
+      paddingInline={{ base: "1rem", sm: "2rem" }}
       h={{ lg: `calc(100vh - 4rem)` }}
       gap={"2rem"}
       gridTemplateColumns={{ base: "1fr", lg: "50% 50%" }}
-      maxWidth="calc(100% - 2rem)"
+      maxWidth={{ base: "100%", lg: "calc(100% - 2rem)" }}
     >
       <Grid
         backgroundColor={"white"}
@@ -110,7 +111,6 @@ const TicketPage = () => {
             overflowY="scroll"
             h={`calc(100% - 3.2rem)`}
             p="3"
-            gap={3}
             flexDirection={"column"}
           >
             {ticket?.ticket_messages.length === 0 &&
