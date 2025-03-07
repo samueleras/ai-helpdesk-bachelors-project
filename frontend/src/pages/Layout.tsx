@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import useAuthStore from "@/stores/AuthStore";
+import { Box } from "@chakra-ui/react";
 
 const Layout = () => {
   const { accessToken } = useAuthStore();
@@ -10,7 +11,7 @@ const Layout = () => {
   return (
     <>
       {<Navbar />}
-      <div>{<Outlet />}</div>
+      <Box backgroundColor={"darkslategray"}>{<Outlet />}</Box>
     </>
   );
 };
