@@ -104,6 +104,7 @@ const AIChatPage = () => {
   return (
     <Flex
       backgroundColor="darkslategray"
+      paddingInline={{ base: "1rem", sm: "2rem" }}
       h={`calc(100vh - 4rem)`}
       justifyContent="center"
       alignItems={"center"}
@@ -112,8 +113,8 @@ const AIChatPage = () => {
     >
       {/* Chat Window */}
       <Box
-        width={{ base: "95vw", sm: "80vw", xl: "60vw" }}
-        height="85vh"
+        width={{ base: "100%", lg: "60vw" }}
+        height="80vh"
         border="1px solid gray"
         backgroundColor={"gray.100"}
         borderRadius={".5rem"}
@@ -121,11 +122,13 @@ const AIChatPage = () => {
       >
         <Flex
           overflowY="scroll"
-          h={`calc(85vh - 3.2rem)`}
+          h={`calc(80vh - 3.2rem)`}
           p="3"
           gap={3}
           flexDirection={"column"}
         >
+          {conversation.length === 0 &&
+            "Start a conversation by stating and describing your issue ..."}
           {conversation.map((message, index) => (
             <ChatMessage
               name={message[0] == "ai" ? "AI" : user.user_name ?? "User"}
