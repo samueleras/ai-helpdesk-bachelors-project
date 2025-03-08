@@ -275,9 +275,12 @@ def get_tickets(
 
 
 @app.get("/api/my-tickets")
-def get_my_tickets(user: Annotated[User, Depends(check_user_group("technicians"))]):
+def get_my_tickets(
+    user: Annotated[User, Depends(verify_token)],
+    filter_data: TicketFilter,
+):
     try:
-        tickets = get_user_tickets(user, config)
+        tickets = get_user_tickets(user, filter_data, config)
         return tickets
     except PermissionError as e:
         raise HTTPException(status_code=403, detail="Unauthorized access")
