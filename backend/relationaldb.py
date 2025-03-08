@@ -225,7 +225,17 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[T
             query += " AND (assignee_id = %s)"
             params += (filter_data.assignee_id,)
 
+        if filter_data.closed is not None:
+            query += " AND (closed_date = NULL)"
+
         query += " ORDER BY creation_date DESC"
+
+        if filter_data.page_size is not None and filter_data.page is not None:
+            query += " LIMIT %s"
+            params += (filter_data.page_size,)
+            query += " OFFSET %s"
+            params += ((filter_data.page - 1) * filter_data.page_size,)
+
         cursor.execute(query, params)
         tickets = cursor.fetchall()
 
@@ -247,7 +257,9 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[T
         cnx.close()
 
 
-def get_user_tickets(user: User, config: AppConfig) -> List[Ticket]:
+def get_user_tickets(
+    user: User, filter_data: TicketFilter, config: AppConfig
+) -> List[Ticket]:
     cnx = connect_to_mysql(config)
 
     if not cnx:
@@ -261,7 +273,15 @@ def get_user_tickets(user: User, config: AppConfig) -> List[Ticket]:
         cursor = cnx.cursor(dictionary=True)
 
         query = "SELECT ticket_id, title, content, creation_date, closed_date, u.user_name as author_name, a.user_name as assignee_name FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE user_id = %s ORDER BY creation_date DESC"
-        cursor.execute(query, (user.user_id,))
+        params = (user.user_id,)
+
+        if filter_data.page_size is not None and filter_data.page is not None:
+            query += " LIMIT %s"
+            params += (filter_data.page_size,)
+            query += " OFFSET %s"
+            params += ((filter_data.page - 1) * filter_data.page_size,)
+
+        cursor.execute(query, params)
         tickets = cursor.fetchall()
 
         for ticket in tickets:

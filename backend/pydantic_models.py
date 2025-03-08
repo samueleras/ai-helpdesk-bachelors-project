@@ -16,7 +16,11 @@ class User(BaseModel):
 
 
 class TicketFilter(BaseModel):
+    page: Optional[int] = None
+    page_size: Optional[int] = None
     assignee_id: Optional[str] = None
+    closed: Optional[bool] = None
+    author_id: Optional[str] = None
 
 
 class NewTicketMessage(BaseModel):
