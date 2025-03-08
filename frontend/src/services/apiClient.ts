@@ -51,9 +51,7 @@ class APIClient<T> {
       ...config.headers,
       Authorization: `Bearer ${accessToken}`,
     };
-    return axiosInstance
-      .get<T[]>(this.endpoint, config)
-      .then((res) => res.data);
+    return axiosInstance.get<T>(this.endpoint, config).then((res) => res.data);
   };
 
   getAllFiltered = async (
@@ -69,7 +67,7 @@ class APIClient<T> {
       Authorization: `Bearer ${accessToken}`,
     };
     return axiosInstance
-      .post<T[]>(this.endpoint, filter, config)
+      .post<T>(this.endpoint, filter, config)
       .then((res) => res.data);
   };
 
