@@ -89,6 +89,11 @@ class Ticket(TypedDict):
     ticket_messages: List[TicketMessage]
 
 
+class TicketList(TypedDict):
+    count: int
+    tickets: List[Ticket]
+
+
 class Technician(TypedDict):
     user_id: str
     user_name: str

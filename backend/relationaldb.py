@@ -4,7 +4,7 @@ import os
 from typing import List
 import mysql.connector
 from mysql.connector import errorcode
-from custom_types import AppConfig, Technician, Ticket, TicketMessage
+from custom_types import AppConfig, Technician, Ticket, TicketList, TicketMessage
 from ai_system.vectordb import retrieve_similar_tickets_milvus
 from backend.pydantic_models import NewTicketMessage, TicketFilter, User
 
@@ -205,7 +205,7 @@ def insert_ticket_message(
     return None
 
 
-def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[Ticket]:
+def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> TicketList:
     cnx = connect_to_mysql(config)
 
     if not cnx:
@@ -243,7 +243,20 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[T
             ticket["similar_tickets"] = []
             ticket["ticket_messages"] = []
 
-        return tickets
+        query = "SELECT COUNT(t.ticket_id) as count FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE 1=1"
+
+        params = ()
+        if filter_data.assignee_id is not None:
+            query += " AND (assignee_id = %s)"
+            params += (filter_data.assignee_id,)
+
+        if filter_data.closed is not None:
+            query += " AND (closed_date = NULL)"
+
+        cursor.execute(query, params)
+        ticketcount = cursor.fetchone()
+
+        return {"count": ticketcount["count"], "tickets": tickets}
 
     except Exception as e:
         logger.error(
@@ -259,7 +272,7 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> List[T
 
 def get_user_tickets(
     user: User, filter_data: TicketFilter, config: AppConfig
-) -> List[Ticket]:
+) -> TicketList:
     cnx = connect_to_mysql(config)
 
     if not cnx:
@@ -288,7 +301,20 @@ def get_user_tickets(
             ticket["similar_tickets"] = []
             ticket["ticket_messages"] = []
 
-        return tickets
+        query = "SELECT COUNT(t.ticket_id) FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE 1=1"
+
+        params = ()
+        if filter_data.assignee_id is not None:
+            query += " AND (assignee_id = %s)"
+            params += (filter_data.assignee_id,)
+
+        if filter_data.closed is not None:
+            query += " AND (closed_date = NULL)"
+
+        cursor.execute(query, params)
+        ticketcount = cursor.fetchone()
+
+        return {"count": ticketcount["count"], "tickets": tickets}
 
     except Exception as e:
         logger.error(
