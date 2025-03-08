@@ -1,4 +1,4 @@
-import { HStack } from "@chakra-ui/react";
+import { Flex, HStack } from "@chakra-ui/react";
 import {
   PaginationItems,
   PaginationNextTrigger,
@@ -19,19 +19,28 @@ interface PageChangeDetails {
 
 const PaginationBar = ({ count, pageSize, changePage }: PaginationBarProps) => {
   return (
-    <PaginationRoot
-      count={count}
-      pageSize={pageSize}
-      defaultPage={1}
-      variant="outline"
-      onPageChange={(details: PageChangeDetails) => changePage(details.page)}
+    <Flex
+      w="100%"
+      justifyContent={"center"}
+      backgroundColor={"white"}
+      p="1"
+      position={"fixed"}
+      bottom="0"
     >
-      <HStack>
-        <PaginationPrevTrigger />
-        <PaginationItems />
-        <PaginationNextTrigger />
-      </HStack>
-    </PaginationRoot>
+      <PaginationRoot
+        count={count}
+        pageSize={pageSize}
+        defaultPage={1}
+        variant="solid"
+        onPageChange={(details: PageChangeDetails) => changePage(details.page)}
+      >
+        <HStack>
+          <PaginationPrevTrigger />
+          <PaginationItems />
+          <PaginationNextTrigger />
+        </HStack>
+      </PaginationRoot>
+    </Flex>
   );
 };
 
