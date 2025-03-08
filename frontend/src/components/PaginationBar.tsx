@@ -23,7 +23,7 @@ const PaginationBar = ({ count, pageSize, changePage }: PaginationBarProps) => {
       count={count}
       pageSize={pageSize}
       defaultPage={1}
-      variant="solid"
+      variant="outline"
       onPageChange={(details: PageChangeDetails) => changePage(details.page)}
     >
       <HStack>
