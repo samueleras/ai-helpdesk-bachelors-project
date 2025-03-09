@@ -1,6 +1,7 @@
 export interface SimilarTicket {
-  ticket_id: number;
-  title: string;
+  distance: number;
+  entity: { title: string };
+  id: number;
 }
 
 export interface TicketMessage {
