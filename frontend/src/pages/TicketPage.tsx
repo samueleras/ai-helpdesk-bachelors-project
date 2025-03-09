@@ -19,8 +19,13 @@ import { IoSend } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import { useParams } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
+import SimilarTicketDialog from "@/components/SimilarTicketDialog";
 
-const TicketPage = () => {
+interface TicketPageProps {
+  ticket_id?: string;
+}
+
+const TicketPage = ({ ticket_id }: TicketPageProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const { accessToken, user } = useAuthStore();
   const [_, setRerender] = useState(0);
@@ -28,11 +33,18 @@ const TicketPage = () => {
   if (!params.id) {
     throw new Error("ID is undefined");
   }
-  const { data: ticket, error } = useTicket(params.id, accessToken);
+  const { data: ticket, error } = useTicket(
+    ticket_id || params.id,
+    accessToken
+  );
   const forceRerender = () => {
     setRerender((prev) => prev + 1); // Changing state forces a re-render
   };
   const { mutate } = useInsertTicketMessage();
+
+  const handleCloseTicket = () => {
+    //handle close ticket
+  };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -96,17 +108,33 @@ const TicketPage = () => {
           <Text>{"Creation Date: " + dateToString(ticket?.creation_date)}</Text>
         </Box>
         <TextDivider />
-        <Grid gap="1rem">
+        <Grid gap="1rem" wordBreak={"break-word"}>
           <ReactMarkdown>
             {ticket?.content.replace(/\\n/g, "\n").replace(/"/g, "")}
           </ReactMarkdown>
         </Grid>
-        <Button mt="1rem">Show Similar Tickets</Button>
+        {ticket?.similar_tickets && !ticket_id && (
+          <Box>
+            <TextDivider />
+            <Heading paddingBlock="1rem">{"Similar Tickets (Solved):"}</Heading>
+            {ticket?.similar_tickets.map((ticket) => (
+              <SimilarTicketDialog ticket={ticket} key={ticket.id} />
+            ))}
+          </Box>
+        )}
+        {!ticket?.closed_date && (
+          <Box>
+            <TextDivider />
+            <Button onClick={handleCloseTicket} mt="2rem">
+              Close Ticket
+            </Button>
+          </Box>
+        )}
       </Grid>
       {/* Chat Window incl Input*/}
       <Box
         width={"100%"}
-        height={"100%"}
+        height={{ base: "85vh", lg: "100%" }}
         border="1px solid gray"
         backgroundColor={"gray.100"}
         borderRadius={".5rem"}
@@ -158,12 +186,14 @@ const TicketPage = () => {
                     : "Provide more Ticket details ..."
                 }
                 height="3rem"
+                disabled={ticket?.closed_date != undefined}
               />
               <Button
                 id="btn-submit"
                 type="submit"
                 height="3rem"
                 backgroundColor={"blue"}
+                disabled={ticket?.closed_date != undefined}
               >
                 <IoSend />
               </Button>
