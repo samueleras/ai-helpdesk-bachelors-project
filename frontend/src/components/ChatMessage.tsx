@@ -16,6 +16,7 @@ const ChatMessage = ({
 }: ChatMessageProps) => {
   return (
     <Grid
+      wordBreak={"break-word"}
       gridTemplateColumns={
         message_from_current_user ? "auto min-content" : "min-content auto"
       }
