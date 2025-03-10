@@ -7,7 +7,15 @@ import { TicketMessage } from "@/entities/Ticket";
 import useInsertTicketMessage from "@/hooks/useInsertTicketMessage";
 import useTicket from "@/hooks/useTicket";
 import { dateToString } from "@/services/dateToString";
-import { Box, Button, Flex, Grid, Heading, Input } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Flex,
+  Grid,
+  Heading,
+  Input,
+  Text,
+} from "@chakra-ui/react";
 import { FormEvent, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
@@ -101,9 +109,13 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
           <Box>
             <TextDivider />
             <Heading paddingBlock="1rem">{"Similar Tickets (Solved):"}</Heading>
-            {ticket?.similar_tickets.map((ticket) => (
-              <SimilarTicketDialog ticket={ticket} key={ticket.id} />
-            ))}
+            {ticket.similar_tickets.length > 0 ? (
+              ticket?.similar_tickets.map((ticket) => (
+                <SimilarTicketDialog ticket={ticket} key={ticket.id} />
+              ))
+            ) : (
+              <Text>None</Text>
+            )}
           </Box>
         )}
       </Grid>
