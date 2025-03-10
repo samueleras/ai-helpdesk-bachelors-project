@@ -7,7 +7,7 @@ const ticketClient = new APIClient<TicketList>("/api/tickets");
 
 const useMyTickets = (accessToken: string, filter?: Filter) => {
   return useQuery<TicketList>({
-    queryKey: ["tickets", filter],
+    queryKey: ["mytickets", filter],
     queryFn: () => ticketClient.getAllFiltered(filter || {}, accessToken),
     retry: 2,
     staleTime: 2 * 60 * 1000,
