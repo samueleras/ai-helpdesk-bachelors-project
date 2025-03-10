@@ -5,7 +5,11 @@ from typing import List
 import mysql.connector
 from mysql.connector import errorcode
 from custom_types import AppConfig, Technician, Ticket, TicketList, TicketMessage
-from ai_system.vectordb import retrieve_similar_tickets_milvus
+from ai_system.vectordb import (
+    remove_ticket_milvus,
+    retrieve_similar_tickets_milvus,
+    store_ticket_milvus,
+)
 from backend.pydantic_models import NewTicketMessage, TicketFilter, User
 
 logger = logging.getLogger(__name__)
@@ -214,16 +218,23 @@ def close_ticket(ticket_id: int, config: AppConfig) -> None:
         )
         raise RuntimeError("Database connection failed") from e
 
-    cursor = cnx.cursor()
+    cursor = cnx.cursor(dictionary=True)
 
     try:
         query = "UPDATE tickets SET closed_date = NOW() WHERE ticket_id = (%s);"
-        values = (ticket_id,)
-        cursor.execute(query, values)
+        cursor.execute(query, (ticket_id,))
         cnx.commit()
         logger.info(
             f"Ticket {ticket_id}: Closed.",
         )
+
+        query = "SELECT ticket_id, title, summary_vector FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE ticket_id = %s"
+        cursor.execute(query, (ticket_id,))
+        ticket = cursor.fetchone()
+
+        if "summary_vector" in ticket:
+            summary_vector = json.loads(ticket["summary_vector"])
+            store_ticket_milvus(ticket["ticket_id"], summary_vector, ticket["title"])
 
     except Exception as e:
         logger.error(
@@ -259,6 +270,7 @@ def reopen_ticket(ticket_id: int, config: AppConfig) -> None:
         logger.info(
             f"Ticket {ticket_id}: Reopened.",
         )
+        remove_ticket_milvus(ticket_id=ticket_id)
 
     except Exception as e:
         logger.error(

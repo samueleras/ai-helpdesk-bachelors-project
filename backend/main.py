@@ -210,8 +210,6 @@ async def init_ai_workflow(
                     title, content, summary_vector, user.user_id, config
                 )
 
-                store_ticket_milvus(ticket_id, summary_vector, title)
-
                 return {"llm_output": "", "ticket": True, "ticket_id": ticket_id}
 
             except Exception as e:
