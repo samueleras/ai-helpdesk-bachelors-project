@@ -32,6 +32,7 @@ from backend.relationaldb import (
     insert_ticket_message,
     is_azure_user_in_db,
     get_ticket,
+    reopen_ticket,
 )
 
 # Load environment variables
@@ -273,7 +274,21 @@ def close_ticket_db(
     except PermissionError as e:
         raise HTTPException(status_code=403, detail="Unauthorized access")
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to insert ticket message")
+        raise HTTPException(status_code=500, detail="Failed to close ticket")
+
+
+@app.post("/api/reopen-ticket")
+def reopen_ticket_db(
+    user: Annotated[User, Depends(check_user_group("technicians"))],
+    ticket: TicketId,
+):
+    try:
+        reopen_ticket(ticket.ticket_id, config)
+        return
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to reopen ticket")
 
 
 @app.post("/api/tickets")
