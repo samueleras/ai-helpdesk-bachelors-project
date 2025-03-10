@@ -5,14 +5,27 @@ import { AssignDropdown } from "./AssignDropdown";
 import { IoLockClosed } from "react-icons/io5";
 import { Ticket } from "@/entities/Ticket";
 import { dateToString } from "@/services/dateToString";
+import useCloseTicket from "@/hooks/useCloseTicket";
+import useAuthStore from "@/stores/AuthStore";
+import useReopenTicket from "@/hooks/useReopenTicket";
 
 interface TicketDetailsProp {
   ticket: Ticket;
 }
 
 const TicketDetails = ({ ticket }: TicketDetailsProp) => {
+  const { mutate: closeTicket } = useCloseTicket();
+  const { mutate: reopenTicket } = useReopenTicket();
+  const { accessToken } = useAuthStore();
+
   const handleCloseTicket = () => {
-    //handle close ticket
+    closeTicket({ ticket_id: ticket.ticket_id, accessToken });
+    ticket.closed_date = new Date();
+  };
+
+  const handleReopenTicket = () => {
+    reopenTicket({ ticket_id: ticket.ticket_id, accessToken });
+    ticket.closed_date = undefined;
   };
 
   return (
@@ -43,9 +56,13 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
         <Badge>
           {ticket.closed_date ? dateToString(ticket.closed_date) : "No"}
         </Badge>
-        {!ticket.closed_date && (
+        {!ticket.closed_date ? (
           <Button onClick={handleCloseTicket} h="1.3rem">
             Close Ticket
+          </Button>
+        ) : (
+          <Button onClick={handleReopenTicket} h="1.3rem">
+            Reopen Ticket
           </Button>
         )}
       </HStack>
