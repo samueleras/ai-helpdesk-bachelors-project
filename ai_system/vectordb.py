@@ -427,6 +427,26 @@ def store_ticket_milvus(
             )
 
 
+def remove_ticket_milvus(ticket_id: int) -> None:
+    attempts = 0
+    while attempts < 3:
+        try:
+            milvus_client.delete(
+                collection_name="collection_ticket",
+                filter=f"id == {ticket_id}",
+            )
+            logger.info(
+                f"Removed ticket with id: {ticket_id} from Milvus database.",
+            )
+            return
+        except Exception as e:
+            attempts += 1
+            logger.error(
+                f"Removing ticket from Milvus failed on attempt {attempts + 1}: {e}",
+                exc_info=True,
+            )
+
+
 def retrieve_similar_tickets_milvus(summary_vector: List[float]) -> List[dict]:
     try:
         return milvus_client.search(
