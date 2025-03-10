@@ -48,7 +48,7 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
       <HStack>
         <FaTools />
         <Text>Assignee:</Text>
-        <AssignDropdown />
+        <AssignDropdown ticket={ticket} />
       </HStack>
       <HStack>
         <IoLockClosed />
