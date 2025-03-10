@@ -447,13 +447,16 @@ def remove_ticket_milvus(ticket_id: int) -> None:
             )
 
 
-def retrieve_similar_tickets_milvus(summary_vector: List[float]) -> List[dict]:
+def retrieve_similar_tickets_milvus(
+    summary_vector: List[float], ticket_id: int
+) -> List[dict]:
     try:
         return milvus_client.search(
             collection_name="collection_ticket",
             anns_field="embedding",
             data=[summary_vector],
             limit=5,
+            filter=f"id != {ticket_id}",
             search_params={"metric_type": "COSINE"},
             output_fields=["title"],
         )[0]
