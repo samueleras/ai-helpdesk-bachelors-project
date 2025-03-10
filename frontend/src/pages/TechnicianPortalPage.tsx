@@ -1,9 +1,9 @@
 import PaginationBar from "@/components/PaginationBar";
 import TicketListContainer from "@/components/TicketListContainer";
 import useFilteredTickets from "@/hooks/useFilteredTickets";
-import { Box, Spinner } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
 
 const TechnicianPortalPage = () => {
@@ -22,13 +22,18 @@ const TechnicianPortalPage = () => {
   const {
     data: ticketList,
     error,
-    isFetching,
+    refetch,
   } = useFilteredTickets(accessToken, { page: page, page_size: pageSize });
+
+  const location = useLocation();
+
+  useEffect(() => {
+    refetch(); // refetch when navigating back to the page
+  }, [location.pathname]);
 
   return (
     <>
       {error && "Error"}
-      {isFetching && <Spinner />}
       <Box minH={`calc(100vh - 4rem)`}>
         <TicketListContainer ticketList={ticketList} />
         <PaginationBar

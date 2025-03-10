@@ -3,7 +3,8 @@ import TicketListContainer from "@/components/TicketListContainer";
 import useMyTickets from "@/hooks/useMyTickets";
 import useAuthStore from "@/stores/AuthStore";
 import { Box, Spinner } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 const MyTicketsPage = () => {
   const { accessToken } = useAuthStore();
@@ -13,7 +14,14 @@ const MyTicketsPage = () => {
     data: ticketList,
     error,
     isFetching,
+    refetch,
   } = useMyTickets(accessToken, { page: page, page_size: pageSize });
+
+  const location = useLocation();
+
+  useEffect(() => {
+    refetch(); // refetch when navigating back to the page
+  }, [location.pathname]);
 
   return (
     <>
