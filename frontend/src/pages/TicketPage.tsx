@@ -1,25 +1,18 @@
 import ChatMessage from "@/components/ChatMessage";
+import SimilarTicketDialog from "@/components/SimilarTicketDialog";
 import TextDivider from "@/components/TextDivider";
+import TicketDetails from "@/components/TicketDetails";
 import { NewTicketMessage } from "@/entities/NewTicketMessage";
 import { TicketMessage } from "@/entities/Ticket";
 import useInsertTicketMessage from "@/hooks/useInsertTicketMessage";
 import useTicket from "@/hooks/useTicket";
 import { dateToString } from "@/services/dateToString";
-import {
-  Box,
-  Button,
-  Flex,
-  Grid,
-  Heading,
-  Input,
-  Text,
-} from "@chakra-ui/react";
+import { Box, Button, Flex, Grid, Heading, Input } from "@chakra-ui/react";
 import { FormEvent, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import { useParams } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
-import SimilarTicketDialog from "@/components/SimilarTicketDialog";
 
 interface TicketPageProps {
   ticket_id?: string;
@@ -41,10 +34,6 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
     setRerender((prev) => prev + 1); // Changing state forces a re-render
   };
   const { mutate } = useInsertTicketMessage();
-
-  const handleCloseTicket = () => {
-    //handle close ticket
-  };
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -101,12 +90,7 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
           </ReactMarkdown>
         </Heading>
         <TextDivider />
-        <Box>
-          <Text>{`User: ${ticket?.author_name}`}</Text>
-          <Text>{`Assignee: ${ticket?.assignee_name || "unassigned"}`}</Text>
-          <Text>{`Ticket ID: ${ticket?.ticket_id}`}</Text>
-          <Text>{"Creation Date: " + dateToString(ticket?.creation_date)}</Text>
-        </Box>
+        {ticket && <TicketDetails ticket={ticket} />}
         <TextDivider />
         <Grid gap="1rem" wordBreak={"break-word"}>
           <ReactMarkdown>
@@ -120,14 +104,6 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
             {ticket?.similar_tickets.map((ticket) => (
               <SimilarTicketDialog ticket={ticket} key={ticket.id} />
             ))}
-          </Box>
-        )}
-        {!ticket?.closed_date && (
-          <Box>
-            <TextDivider />
-            <Button onClick={handleCloseTicket} mt="2rem">
-              Close Ticket
-            </Button>
           </Box>
         )}
       </Grid>

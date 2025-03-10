@@ -1,23 +1,8 @@
 import { Ticket } from "@/entities/Ticket";
-import { dateToString } from "@/services/dateToString";
-import {
-  Badge,
-  Button,
-  Card,
-  HStack,
-  Image,
-  VStack,
-  Text,
-  Flex,
-} from "@chakra-ui/react";
-import { FaUser } from "react-icons/fa";
-import { FaHashtag } from "react-icons/fa";
-import { MdDateRange } from "react-icons/md";
-import ticketImage from "../assets/ticket_image.webp";
-import { AssignDropdown } from "./AssignDropdown";
-import { FaTools } from "react-icons/fa";
+import { Card, Flex, Image } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import { IoLockClosed } from "react-icons/io5";
+import ticketImage from "../assets/ticket_image.webp";
+import TicketDetails from "./TicketDetails";
 
 interface TicketListItemProps {
   ticket: Ticket;
@@ -25,10 +10,6 @@ interface TicketListItemProps {
 
 export const TicketListItem = ({ ticket }: TicketListItemProps) => {
   const navigate = useNavigate();
-
-  const handleCloseTicket = () => {
-    //handle close ticket
-  };
 
   return (
     <Card.Root
@@ -58,45 +39,13 @@ export const TicketListItem = ({ ticket }: TicketListItemProps) => {
           <Card.Description
             onClick={() => navigate(`/ticket/${ticket.ticket_id}`)}
             cursor={"pointer"}
+            mb="4"
           >
             {ticket.content
               .substring(0, ticket.content.indexOf(".") + 1)
               .replace(/"/g, "")}
           </Card.Description>
-          <VStack mt="4" alignItems={"start"} fontSize={"sm"} gap="3">
-            <HStack>
-              <FaUser />
-              <Text>Author:</Text>
-              <Badge>{ticket.author_name}</Badge>
-            </HStack>
-            <HStack>
-              <FaHashtag />
-              <Text>Ticket ID:</Text>
-              <Badge>{ticket.ticket_id}</Badge>
-            </HStack>
-            <HStack>
-              <MdDateRange />
-              <Text>Creation Date:</Text>
-              <Badge>{dateToString(ticket.creation_date)}</Badge>
-            </HStack>
-            <HStack>
-              <FaTools />
-              <Text>Assignee:</Text>
-              <AssignDropdown />
-            </HStack>
-            <HStack>
-              <IoLockClosed />
-              <Text>Closed:</Text>
-              <Badge>
-                {ticket.closed_date ? dateToString(ticket.closed_date) : "No"}
-              </Badge>
-              {!ticket.closed_date && (
-                <Button onClick={handleCloseTicket} h="1.3rem">
-                  Close Ticket
-                </Button>
-              )}
-            </HStack>
-          </VStack>
+          <TicketDetails ticket={ticket} />
         </Card.Body>
       </Flex>
     </Card.Root>
