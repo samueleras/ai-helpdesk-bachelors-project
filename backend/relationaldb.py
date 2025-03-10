@@ -10,7 +10,7 @@ from ai_system.vectordb import (
     retrieve_similar_tickets_milvus,
     store_ticket_milvus,
 )
-from backend.pydantic_models import NewTicketMessage, TicketFilter, User
+from backend.pydantic_models import NewTicketMessage, TicketAssignee, TicketFilter, User
 
 logger = logging.getLogger(__name__)
 
@@ -440,6 +440,43 @@ def get_technicians(config: AppConfig) -> List[Technician]:
     finally:
         cursor.close()
         cnx.close()
+
+
+def assign_ticket(ticket: TicketAssignee, config: AppConfig) -> None:
+    cnx = connect_to_mysql(config)
+
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
+    cursor = cnx.cursor()
+
+    try:
+        print(ticket.assignee_id, ticket.ticket_id)
+        if ticket.assignee_id == "Unassigned":
+            ticket.assignee_id = None
+        query = "UPDATE tickets SET assignee_id = (%s) WHERE ticket_id = (%s);"
+        cursor.execute(query, (ticket.assignee_id, ticket.ticket_id))
+        cnx.commit()
+        logger.info(
+            f"Ticket {ticket.ticket_id}: Assigned to {ticket.assignee_id}.",
+        )
+
+    except Exception as e:
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
+        raise RuntimeError(f"Database error: {e}") from e
+
+    finally:
+        cursor.close()
+        cnx.close()
+
+    return None
 
 
 def insert_azure_user(

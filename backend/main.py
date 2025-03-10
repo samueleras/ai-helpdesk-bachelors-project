@@ -12,6 +12,7 @@ from custom_types import TicketMessage, WorkflowResponse, AppConfig
 from dotenv import load_dotenv
 from backend.pydantic_models import (
     NewTicketMessage,
+    TicketAssignee,
     TicketFilter,
     TicketId,
     User,
@@ -24,6 +25,7 @@ from typing import Annotated, Callable
 import requests
 import jwt
 from backend.relationaldb import (
+    assign_ticket,
     close_ticket,
     get_filtered_tickets,
     get_technicians,
@@ -329,6 +331,20 @@ async def get_technicians_db(
         raise HTTPException(status_code=403, detail="Unauthorized access")
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to retrieve technicians")
+
+
+@app.post("/api/assign-ticket")
+async def assign_ticket_db(
+    user: Annotated[User, Depends(check_user_group("technicians"))],
+    ticket: TicketAssignee,
+):
+    try:
+        assign_ticket(ticket, config)
+        return
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to close ticket")
 
 
 # Serve frontend files

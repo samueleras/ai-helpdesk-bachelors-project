@@ -31,3 +31,8 @@ class NewTicketMessage(BaseModel):
 
 class TicketId(BaseModel):
     ticket_id: int
+
+
+class TicketAssignee(BaseModel):
+    ticket_id: int
+    assignee_id: str
