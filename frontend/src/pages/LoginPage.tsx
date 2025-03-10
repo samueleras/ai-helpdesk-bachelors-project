@@ -11,12 +11,8 @@ const LoginPage = () => {
   const { user, login } = useAuthStore();
 
   useEffect(() => {
-    if (user && Object.keys(user).length > 0) {
-      console.log("Logged in successfully!");
-      console.log("User ", user);
-      if (user.group === "users") navigate("/my-tickets");
-      if (user.group === "technicians") navigate("/technician-portal");
-    }
+    if (user.group === "users") navigate("/my-tickets");
+    if (user.group === "technicians") navigate("/technician-portal");
   }, [user]);
 
   const handleLogin = async () => {

@@ -24,7 +24,6 @@ export function Navbar() {
   const azurelogout = () => {
     instance.clearCache();
     logout();
-    console.log("Logged out.");
   };
 
   return (
