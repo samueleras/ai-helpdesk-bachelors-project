@@ -137,7 +137,7 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
         ticket = cursor.fetchone()
 
         ticket["similar_tickets"] = []
-        if "summary_vector" in ticket and user.group == "technician":
+        if "summary_vector" in ticket and user.group == "technicians":
             # Convert JSON string back to vector list
             summary_vector = json.loads(ticket["summary_vector"])
             similar_tickets = retrieve_similar_tickets_milvus(summary_vector)
