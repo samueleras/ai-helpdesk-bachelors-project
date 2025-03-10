@@ -26,6 +26,7 @@ import jwt
 from backend.relationaldb import (
     close_ticket,
     get_filtered_tickets,
+    get_technicians,
     get_user_tickets,
     insert_ticket,
     insert_azure_user,
@@ -248,7 +249,7 @@ async def get_ticket_by_id(user: Annotated[User, Depends(verify_token)], id: int
 
 
 @app.post("/api/insert-ticket-message")
-def insert_ticket_message_db(
+async def insert_ticket_message_db(
     user: Annotated[User, Depends(verify_token)],
     new_ticket_message: NewTicketMessage,
 ):
@@ -262,7 +263,7 @@ def insert_ticket_message_db(
 
 
 @app.post("/api/close-ticket")
-def close_ticket_db(
+async def close_ticket_db(
     user: Annotated[User, Depends(check_user_group("technicians"))],
     ticket: TicketId,
 ):
@@ -276,7 +277,7 @@ def close_ticket_db(
 
 
 @app.post("/api/reopen-ticket")
-def reopen_ticket_db(
+async def reopen_ticket_db(
     user: Annotated[User, Depends(check_user_group("technicians"))],
     ticket: TicketId,
 ):
@@ -290,7 +291,7 @@ def reopen_ticket_db(
 
 
 @app.post("/api/tickets")
-def get_tickets(
+async def get_tickets(
     user: Annotated[User, Depends(check_user_group("technicians"))],
     filter_data: TicketFilter,
 ):
@@ -304,7 +305,7 @@ def get_tickets(
 
 
 @app.get("/api/my-tickets")
-def get_my_tickets(
+async def get_my_tickets(
     user: Annotated[User, Depends(verify_token)],
     filter_data: TicketFilter,
 ):
@@ -318,7 +319,7 @@ def get_my_tickets(
 
 
 @app.get("/api/technicians")
-async def get_technicians(
+async def get_technicians_db(
     user: Annotated[User, Depends(check_user_group("technicians"))],
 ):
     try:

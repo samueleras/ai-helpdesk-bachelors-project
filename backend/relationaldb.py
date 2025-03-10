@@ -424,7 +424,7 @@ def get_technicians(config: AppConfig) -> List[Technician]:
     try:
         cursor = cnx.cursor(dictionary=True)
 
-        query = "SELECT user_id, user_name FROM azure_users WHERE group = 'technician'"
+        query = "SELECT user_id, user_name FROM azure_users WHERE user_group = 'technicians'"
         cursor.execute(query)
         technicians = cursor.fetchall()
 
