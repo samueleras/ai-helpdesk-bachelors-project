@@ -27,3 +27,7 @@ class NewTicketMessage(BaseModel):
     ticket_id: int
     message: str
     created_at: datetime
+
+
+class TicketId(BaseModel):
+    ticket_id: int

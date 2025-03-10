@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from backend.pydantic_models import (
     NewTicketMessage,
     TicketFilter,
+    TicketId,
     User,
     WorkflowRequestModel,
 )
@@ -23,6 +24,7 @@ from typing import Annotated, Callable
 import requests
 import jwt
 from backend.relationaldb import (
+    close_ticket,
     get_filtered_tickets,
     get_user_tickets,
     insert_ticket,
@@ -253,6 +255,20 @@ def insert_ticket_message_db(
 ):
     try:
         insert_ticket_message(new_ticket_message, user, config)
+        return
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to insert ticket message")
+
+
+@app.post("/api/close-ticket")
+def close_ticket_db(
+    user: Annotated[User, Depends(check_user_group("technicians"))],
+    ticket: TicketId,
+):
+    try:
+        close_ticket(ticket.ticket_id, config)
         return
     except PermissionError as e:
         raise HTTPException(status_code=403, detail="Unauthorized access")

@@ -191,7 +191,41 @@ def insert_ticket_message(
         )
 
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.error(
+            f"Database error: {e}",
+            exc_info=True,
+        )
+        raise RuntimeError(f"Database error: {e}") from e
+
+    finally:
+        cursor.close()
+        cnx.close()
+
+    return None
+
+
+def close_ticket(ticket_id: int, config: AppConfig) -> None:
+    cnx = connect_to_mysql(config)
+
+    if not cnx:
+        logger.error(
+            "Database connection failed",
+            exc_info=True,
+        )
+        raise RuntimeError("Database connection failed") from e
+
+    cursor = cnx.cursor()
+
+    try:
+        query = "UPDATE tickets SET closed_date = NOW() WHERE ticket_id = (%s);"
+        values = (ticket_id,)
+        cursor.execute(query, values)
+        cnx.commit()
+        logger.info(
+            f"Ticket {ticket_id}: Closed.",
+        )
+
+    except Exception as e:
         logger.error(
             f"Database error: {e}",
             exc_info=True,
