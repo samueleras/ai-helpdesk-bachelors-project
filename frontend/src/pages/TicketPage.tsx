@@ -105,19 +105,23 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
             {ticket?.content.replace(/\\n/g, "\n").replace(/"/g, "")}
           </ReactMarkdown>
         </Grid>
-        {ticket?.similar_tickets && !ticket_id && (
-          <Box>
-            <TextDivider />
-            <Heading paddingBlock="1rem">{"Similar Tickets (Solved):"}</Heading>
-            {ticket.similar_tickets.length > 0 ? (
-              ticket?.similar_tickets.map((ticket) => (
-                <SimilarTicketDialog ticket={ticket} key={ticket.id} />
-              ))
-            ) : (
-              <Text>None</Text>
-            )}
-          </Box>
-        )}
+        {user.group === "technicians" &&
+          ticket?.similar_tickets &&
+          !ticket_id && (
+            <Box>
+              <TextDivider />
+              <Heading paddingBlock="1rem">
+                {"Similar Tickets (Solved):"}
+              </Heading>
+              {ticket.similar_tickets.length > 0 ? (
+                ticket?.similar_tickets.map((ticket) => (
+                  <SimilarTicketDialog ticket={ticket} key={ticket.id} />
+                ))
+              ) : (
+                <Text>None</Text>
+              )}
+            </Box>
+          )}
       </Grid>
       {/* Chat Window incl Input*/}
       <Box

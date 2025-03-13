@@ -17,7 +17,7 @@ import { GiHamburgerMenu } from "react-icons/gi";
 
 export function Navbar() {
   const { instance } = useMsal();
-  const { logout } = useAuthStore();
+  const { user, logout } = useAuthStore();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -43,18 +43,23 @@ export function Navbar() {
         alignContent={"center"}
         w={"100vw"}
       >
-        <Box style={{ fontWeight: "bold", fontSize: "1.2rem" }}>
+        <Box
+          style={{ fontWeight: "bold", fontSize: "1.2rem" }}
+          cursor={"default"}
+        >
           AI Helpdesk
         </Box>
 
         {/* Desktop Navbar */}
         <Flex display={{ base: "none", md: "flex" }} gap={6}>
           <StyledNavLink link="/ai-chat" name="AI Chat" bottomline={true} />
-          <StyledNavLink
-            link="/technician-portal"
-            name="Technician Portal"
-            bottomline={true}
-          />
+          {user.group === "technicians" && (
+            <StyledNavLink
+              link="/technician-portal"
+              name="Technician Portal"
+              bottomline={true}
+            />
+          )}
           <StyledNavLink
             link="/my-tickets"
             name="My Tickets"

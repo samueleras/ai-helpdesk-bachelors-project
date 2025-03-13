@@ -16,7 +16,7 @@ interface TicketDetailsProp {
 const TicketDetails = ({ ticket }: TicketDetailsProp) => {
   const { mutate: closeTicket } = useCloseTicket();
   const { mutate: reopenTicket } = useReopenTicket();
-  const { accessToken } = useAuthStore();
+  const { accessToken, user } = useAuthStore();
 
   const handleCloseTicket = () => {
     closeTicket({ ticket_id: ticket.ticket_id, accessToken });
@@ -48,7 +48,11 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
       <HStack>
         <FaTools />
         <Text>Assignee:</Text>
-        <AssignDropdown ticket={ticket} />
+        {user.group === "technicians" ? (
+          <AssignDropdown ticket={ticket} />
+        ) : (
+          <Badge>{ticket.assignee_name || "Unassigned"}</Badge>
+        )}
       </HStack>
       <Flex alignItems={"center"} gap=".5rem" flexWrap={"wrap"}>
         <IoLockClosed />
@@ -56,15 +60,16 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
         <Badge>
           {ticket.closed_date ? dateToString(ticket.closed_date) : "No"}
         </Badge>
-        {!ticket.closed_date ? (
-          <Button onClick={handleCloseTicket} h="1.3rem">
-            Close Ticket
-          </Button>
-        ) : (
-          <Button onClick={handleReopenTicket} h="1.3rem">
-            Reopen Ticket
-          </Button>
-        )}
+        {user.group === "technicians" &&
+          (!ticket.closed_date ? (
+            <Button onClick={handleCloseTicket} h="1.3rem">
+              Close Ticket
+            </Button>
+          ) : (
+            <Button onClick={handleReopenTicket} h="1.3rem">
+              Reopen Ticket
+            </Button>
+          ))}
       </Flex>
     </VStack>
   );
