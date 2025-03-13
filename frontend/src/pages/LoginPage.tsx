@@ -1,5 +1,5 @@
 import { useMsal } from "@azure/msal-react";
-import { Avatar, Button, Card, Flex, Heading } from "@chakra-ui/react";
+import { Avatar, Button, Card, Flex, Heading, Text } from "@chakra-ui/react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useUsersMe from "../hooks/useUserMe";
@@ -8,7 +8,7 @@ import useAuthStore from "../stores/AuthStore";
 const LoginPage = () => {
   const { instance } = useMsal();
   const navigate = useNavigate();
-  const { user, login } = useAuthStore();
+  const { accessToken, user, login } = useAuthStore();
 
   useEffect(() => {
     if (user.group === "users") navigate("/my-tickets");
@@ -59,8 +59,13 @@ const LoginPage = () => {
             Microsoft Azure.
           </Card.Description>
         </Card.Body>
-        <Card.Footer justifyContent="flex-end">
-          <Button onClick={handleLogin}>Login</Button>
+        <Card.Footer flexDirection={"column"}>
+          <Button marginLeft={"auto"} onClick={handleLogin}>
+            Login
+          </Button>
+          {accessToken && !user.group && (
+            <Text color="red">No permission to access this Application.</Text>
+          )}
         </Card.Footer>
       </Card.Root>
     </Flex>
