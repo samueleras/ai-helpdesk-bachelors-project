@@ -1,4 +1,4 @@
-import { Badge, Button, HStack, VStack, Text } from "@chakra-ui/react";
+import { Badge, Button, HStack, VStack, Text, Flex } from "@chakra-ui/react";
 import { FaHashtag, FaTools, FaUser } from "react-icons/fa";
 import { MdDateRange } from "react-icons/md";
 import { AssignDropdown } from "./AssignDropdown";
@@ -50,7 +50,7 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
         <Text>Assignee:</Text>
         <AssignDropdown ticket={ticket} />
       </HStack>
-      <HStack>
+      <Flex alignItems={"center"} gap=".5rem" flexWrap={"wrap"}>
         <IoLockClosed />
         <Text>Closed:</Text>
         <Badge>
@@ -65,7 +65,7 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
             Reopen Ticket
           </Button>
         )}
-      </HStack>
+      </Flex>
     </VStack>
   );
 };
