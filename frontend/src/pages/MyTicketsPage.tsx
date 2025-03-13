@@ -27,12 +27,12 @@ const MyTicketsPage = () => {
       {error && "Error"}
       <Box minH={`calc(100vh - 4rem)`} p={{ base: "1rem", sm: "2rem" }}>
         <TicketListContainer ticketList={ticketList} />
-        <PaginationBar
-          count={ticketList?.count || 1}
-          pageSize={pageSize}
-          changePage={setPage}
-        />
       </Box>
+      <PaginationBar
+        count={ticketList?.count || 1}
+        pageSize={pageSize}
+        changePage={setPage}
+      />
     </>
   );
 };
