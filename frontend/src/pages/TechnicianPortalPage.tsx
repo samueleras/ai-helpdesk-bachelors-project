@@ -6,12 +6,14 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
 import TicketFilter from "@/components/TicketFilter";
+import useFilterStore from "@/stores/FilterStore";
 
 const TechnicianPortalPage = () => {
   const { user, accessToken } = useAuthStore();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const pageSize = 10;
+  const { ticketFilter } = useFilterStore();
 
   useEffect(() => {
     if (user?.group !== "technicians") {
@@ -24,7 +26,11 @@ const TechnicianPortalPage = () => {
     data: ticketList,
     error,
     refetch,
-  } = useFilteredTickets(accessToken, { page: page, page_size: pageSize });
+  } = useFilteredTickets(accessToken, {
+    page: page,
+    page_size: pageSize,
+    ...ticketFilter,
+  });
 
   const location = useLocation();
 
