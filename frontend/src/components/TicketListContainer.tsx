@@ -10,7 +10,6 @@ const TicketListContainer = ({ ticketList }: TicketListProps) => {
   return (
     <Grid
       gridTemplateColumns={{ base: "1fr", xl: "1fr 1fr" }}
-      p={{ base: "1rem", sm: "2rem" }}
       gap="2rem"
       mb="3rem"
     >

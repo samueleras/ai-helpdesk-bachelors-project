@@ -2,7 +2,7 @@ import PaginationBar from "@/components/PaginationBar";
 import TicketListContainer from "@/components/TicketListContainer";
 import useMyTickets from "@/hooks/useMyTickets";
 import useAuthStore from "@/stores/AuthStore";
-import { Box, Spinner } from "@chakra-ui/react";
+import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -13,7 +13,6 @@ const MyTicketsPage = () => {
   const {
     data: ticketList,
     error,
-    isFetching,
     refetch,
   } = useMyTickets(accessToken, { page: page, page_size: pageSize });
 
@@ -26,8 +25,7 @@ const MyTicketsPage = () => {
   return (
     <>
       {error && "Error"}
-      {isFetching && <Spinner />}
-      <Box minH={`calc(100vh - 4rem)`}>
+      <Box minH={`calc(100vh - 4rem)`} p={{ base: "1rem", sm: "2rem" }}>
         <TicketListContainer ticketList={ticketList} />
         <PaginationBar
           count={ticketList?.count || 1}

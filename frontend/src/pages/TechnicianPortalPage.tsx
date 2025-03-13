@@ -5,6 +5,7 @@ import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
+import TicketFilter from "@/components/TicketFilter";
 
 const TechnicianPortalPage = () => {
   const { user, accessToken } = useAuthStore();
@@ -34,7 +35,8 @@ const TechnicianPortalPage = () => {
   return (
     <>
       {error && "Error"}
-      <Box minH={`calc(100vh - 4rem)`}>
+      <Box minH={`calc(100vh - 4rem)`} p={{ base: "1rem", sm: "2rem" }}>
+        <TicketFilter />
         <TicketListContainer ticketList={ticketList} />
         <PaginationBar
           count={ticketList?.count || 1}
