@@ -1,5 +1,13 @@
 import ChatMessage from "@/components/ChatMessage";
-import { Avatar, Box, Button, Flex, Input } from "@chakra-ui/react";
+import {
+  Avatar,
+  Box,
+  Button,
+  Flex,
+  Input,
+  Spinner,
+  Text,
+} from "@chakra-ui/react";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
@@ -137,15 +145,27 @@ const AIChatPage = () => {
               key={index}
             />
           ))}
-          {/* Writing Animation */}
-          {isFetching && (
-            <Flex alignItems={"center"} gap={2}>
-              <Avatar.Root>
-                <Avatar.Fallback name={"A I"} />
-              </Avatar.Root>
-              <BeatLoader size={8} color="gray" />
-            </Flex>
-          )}
+          {/* Writing and Ticket Creation Animation */}
+          {isFetching &&
+            (ticket == true && executionCount == 1 ? (
+              <Flex alignItems={"center"} gap={2}>
+                <Avatar.Root>
+                  <Avatar.Fallback name={"A I"} />
+                </Avatar.Root>
+                <Text>Generating ticket</Text>
+                <Spinner />
+                <Text>
+                  This may take 1-2 minutes. Please stay on this page.
+                </Text>
+              </Flex>
+            ) : (
+              <Flex alignItems={"center"} gap={2}>
+                <Avatar.Root>
+                  <Avatar.Fallback name={"A I"} />
+                </Avatar.Root>
+                <BeatLoader size={8} color="gray" />
+              </Flex>
+            ))}
           {error && <p>Error: {error.message}</p>}
         </Flex>
         {/* Input Field */}
