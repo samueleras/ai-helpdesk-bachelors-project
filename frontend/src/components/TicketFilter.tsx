@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { FaSearch, FaTools } from "react-icons/fa";
 import { FaArrowDownWideShort } from "react-icons/fa6";
+import { IoLockClosed } from "react-icons/io5";
 
 const TicketFilter = () => {
   return (
@@ -60,7 +61,7 @@ const TicketFilter = () => {
             <FaArrowDownWideShort />
             <Text paddingInline={".5rem"}>Order:</Text>
             <MenuTrigger asChild>
-              <Button variant="outline" size="sm" h="1.3rem">
+              <Button variant="outline" size="sm" h="1.3rem" mr="1rem">
                 Creation Date Asc
               </Button>
             </MenuTrigger>
@@ -78,6 +79,39 @@ const TicketFilter = () => {
                 value="Creation Date DESC"
               >
                 Creation Date DESC
+              </MenuItem>
+            </MenuItemGroup>
+          </MenuContent>
+        </MenuRoot>
+        <MenuRoot>
+          <Flex alignItems={"center"}>
+            <IoLockClosed />
+            <Text paddingInline={".5rem"}>Status:</Text>
+            <MenuTrigger asChild>
+              <Button variant="outline" size="sm" h="1.3rem">
+                Opened
+              </Button>
+            </MenuTrigger>
+          </Flex>
+          <MenuContent>
+            <MenuItemGroup>
+              <MenuItem
+                onClick={() => console.log("Creation Date DESC")}
+                value="all"
+              >
+                All
+              </MenuItem>
+              <MenuItem
+                onClick={() => console.log("Creation Date ASC")}
+                value="opened"
+              >
+                Opened
+              </MenuItem>
+              <MenuItem
+                onClick={() => console.log("Creation Date DESC")}
+                value="closed"
+              >
+                Closed
               </MenuItem>
             </MenuItemGroup>
           </MenuContent>
