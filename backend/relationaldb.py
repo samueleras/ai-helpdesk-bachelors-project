@@ -147,7 +147,10 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
             similar_tickets = retrieve_similar_tickets_milvus(
                 summary_vector, ticket["ticket_id"]
             )
-            ticket["similar_tickets"] = similar_tickets
+            filtered_similar_tickets = [
+                item for item in similar_tickets if item["distance"] >= 0.6
+            ]
+            ticket["similar_tickets"] = filtered_similar_tickets
 
         if "summary_vector" in ticket:
             ticket.pop("summary_vector")  # Field not needed on frontend
