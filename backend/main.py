@@ -306,7 +306,7 @@ async def get_tickets(
         raise HTTPException(status_code=500, detail="Failed to retrieve tickets")
 
 
-@app.get("/api/my-tickets")
+@app.post("/api/my-tickets")
 async def get_my_tickets(
     user: Annotated[User, Depends(verify_token)],
     filter_data: TicketFilter,
