@@ -21,6 +21,8 @@ class TicketFilter(BaseModel):
     assignee_id: Optional[str] = None
     closed: Optional[bool] = None
     author_id: Optional[str] = None
+    order: Optional[str] = None
+    search: Optional[str] = None
 
 
 class NewTicketMessage(BaseModel):
