@@ -304,14 +304,30 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> Ticket
         query = "SELECT ticket_id, title, content, creation_date, closed_date, u.user_name as author_name, a.user_name as assignee_name FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE 1=1"
 
         params = ()
-        if filter_data.assignee_id is not None:
-            query += " AND (assignee_id = %s)"
-            params += (filter_data.assignee_id,)
 
-        if filter_data.closed is not None:
-            query += " AND (closed_date = NULL)"
+        if filter_data.search is not None:
+            query += " AND (title LIKE %s)"
+            search_term = f"%{filter_data.search}%"
+            params += (search_term,)
+        else:
+            if filter_data.assignee_id is not None:
+                if filter_data.assignee_id == "unassigned":
+                    query += " AND (assignee_id is NULL)"
+                else:
+                    query += " AND (assignee_id = %s)"
+                    params += (filter_data.assignee_id,)
 
-        query += " ORDER BY creation_date DESC"
+            if filter_data.closed is not None:
+                if filter_data.closed == True:
+                    query += " AND (closed_date is not NULL)"
+                if filter_data.closed == False:
+                    query += " AND (closed_date is NULL)"
+
+        if filter_data.order is not None:
+            if filter_data.closed == "asc":
+                query += " ORDER BY creation_date ASC"
+        else:
+            query += " ORDER BY creation_date DESC"
 
         if filter_data.page_size is not None and filter_data.page is not None:
             query += " LIMIT %s"
@@ -329,12 +345,29 @@ def get_filtered_tickets(filter_data: TicketFilter, config: AppConfig) -> Ticket
         query = "SELECT COUNT(t.ticket_id) as count FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE 1=1"
 
         params = ()
-        if filter_data.assignee_id is not None:
-            query += " AND (assignee_id = %s)"
-            params += (filter_data.assignee_id,)
+        if filter_data.search is not None:
+            query += " AND (title LIKE %s)"
+            search_term = f"%{filter_data.search}%"
+            params += (search_term,)
+        else:
+            if filter_data.assignee_id is not None:
+                if filter_data.assignee_id == "unassigned":
+                    query += " AND (assignee_id is NULL)"
+                else:
+                    query += " AND (assignee_id = %s)"
+                    params += (filter_data.assignee_id,)
 
-        if filter_data.closed is not None:
-            query += " AND (closed_date = NULL)"
+            if filter_data.closed is not None:
+                if filter_data.closed == True:
+                    query += " AND (closed_date is not NULL)"
+                if filter_data.closed == False:
+                    query += " AND (closed_date is NULL)"
+
+        if filter_data.order is not None:
+            if filter_data.closed == "asc":
+                query += " ORDER BY creation_date ASC"
+        else:
+            query += " ORDER BY creation_date DESC"
 
         cursor.execute(query, params)
         ticketcount = cursor.fetchone()
