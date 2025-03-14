@@ -5,6 +5,7 @@ import useAuthStore from "@/stores/AuthStore";
 import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { Toaster, toaster } from "@/components/ui/toaster";
 
 const MyTicketsPage = () => {
   const { accessToken } = useAuthStore();
@@ -12,7 +13,7 @@ const MyTicketsPage = () => {
   const pageSize = 10;
   const {
     data: ticketList,
-    error,
+    error: ticketsError,
     refetch,
   } = useMyTickets(accessToken, { page: page, page_size: pageSize });
 
@@ -22,9 +23,18 @@ const MyTicketsPage = () => {
     refetch(); // refetch when navigating back to the page
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (ticketsError) {
+      toaster.create({
+        title: "Error",
+        type: "error",
+        description: "Failed to load tickets. Please try again later.",
+      });
+    }
+  }, [ticketsError]);
+
   return (
     <>
-      {error && "Error"}
       <Box minH={`calc(100vh - 4rem)`} p={{ base: "1rem", sm: "2rem" }}>
         <TicketListContainer ticketList={ticketList} />
       </Box>
@@ -33,6 +43,7 @@ const MyTicketsPage = () => {
         pageSize={pageSize}
         changePage={setPage}
       />
+      <Toaster />
     </>
   );
 };

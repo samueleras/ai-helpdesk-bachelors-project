@@ -35,22 +35,32 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
   if (!params.id) {
     throw new Error("ID is undefined");
   }
-  const { data: ticket, error } = useTicket(
+  const { data: ticket, error: ticketError } = useTicket(
     ticket_id || params.id,
     accessToken
   );
   const forceRerender = () => {
     setRerender((prev) => prev + 1); // Changing state forces a re-render
   };
-  const { mutate, error: unsertTicketMessageError } = useInsertTicketMessage();
+  const { mutate, error: insertTicketMessageError } = useInsertTicketMessage();
 
   useEffect(() => {
-    unsertTicketMessageError &&
+    insertTicketMessageError &&
       toaster.create({
         title: "Error",
+        type: "error",
         description: "Failed to save Message. Please try again.",
       });
-  }, [unsertTicketMessageError]);
+  }, [insertTicketMessageError]);
+
+  useEffect(() => {
+    ticketError &&
+      toaster.create({
+        title: "Error",
+        type: "error",
+        description: "Failed to load Ticket. Please try again.",
+      });
+  }, [ticketError]);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -164,7 +174,6 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
               key={index}
             />
           ))}
-          {error && <p>Error: {error.message}</p>}
         </Flex>
         {/* Input Field */}
         <Box

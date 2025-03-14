@@ -7,6 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
 import TicketFilter from "@/components/TicketFilter";
 import useFilterStore from "@/stores/FilterStore";
+import { Toaster, toaster } from "@/components/ui/toaster";
 
 const TechnicianPortalPage = () => {
   const { user, accessToken } = useAuthStore();
@@ -24,13 +25,23 @@ const TechnicianPortalPage = () => {
 
   const {
     data: ticketList,
-    error,
+    error: ticketsError,
     refetch,
   } = useFilteredTickets(accessToken, {
     page: page,
     page_size: pageSize,
     ...ticketFilter,
   });
+
+  useEffect(() => {
+    if (ticketsError) {
+      toaster.create({
+        title: "Error",
+        type: "error",
+        description: "Failed to load tickets. Please try again later.",
+      });
+    }
+  }, [ticketsError]);
 
   const location = useLocation();
 
@@ -40,7 +51,6 @@ const TechnicianPortalPage = () => {
 
   return (
     <>
-      {error && "Error"}
       <Box minH={`calc(100vh - 4rem)`} p={{ base: "1rem", sm: "2rem" }}>
         <TicketFilter />
         <TicketListContainer ticketList={ticketList} />
@@ -50,6 +60,7 @@ const TechnicianPortalPage = () => {
         pageSize={pageSize}
         changePage={setPage}
       />
+      <Toaster />
     </>
   );
 };

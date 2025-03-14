@@ -40,6 +40,7 @@ export const AssignDropdown = ({ ticket }: AssignDropdownProps) => {
     assignTicketError &&
       toaster.create({
         title: "Error",
+        type: "error",
         description: "Failed to assign Ticket. Please try again.",
       });
     setAssigneeName(ticket.assignee_name);

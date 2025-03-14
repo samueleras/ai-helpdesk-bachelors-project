@@ -15,6 +15,7 @@ import { BeatLoader } from "react-spinners";
 import useAIWorkflow from "../hooks/useAIWorkflow";
 import useAuthStore from "../stores/AuthStore";
 import useChatStore from "../stores/ChatStore";
+import { Toaster, toaster } from "@/components/ui/toaster";
 
 const AIChatPage = () => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +38,7 @@ const AIChatPage = () => {
 
   const {
     data: workflowResponse,
-    error,
+    error: aiWorkflowError,
     isFetching,
     refetch,
   } = useAIWorkflow(workflowRequest, accessToken);
@@ -48,7 +49,6 @@ const AIChatPage = () => {
       return;
     }
     if (workflowResponse) {
-      console.log(workflowResponse);
       if (workflowResponse.ticket_id) {
         resetChat();
         navigate(`/ticket/${workflowResponse.ticket_id}`);
@@ -72,13 +72,21 @@ const AIChatPage = () => {
       return;
     }
     if (workflowRequest?.conversation.length != 0) {
-      console.log(
-        "Workflow Request:",
-        JSON.stringify(workflowRequest, null, 2)
-      );
       refetch();
     }
   }, [workflowRequest]);
+
+  useEffect(() => {
+    if (aiWorkflowError) {
+      conversation.pop();
+      setConversation(conversation);
+      toaster.create({
+        title: "Error",
+        type: "error",
+        description: "The AI failed to respond. Please try again.",
+      });
+    }
+  }, [aiWorkflowError]);
 
   const handleTicketCreation = () => {
     setTicketButton(false);
@@ -119,6 +127,7 @@ const AIChatPage = () => {
       flexDirection={"column"}
       gap="3"
     >
+      <Toaster />
       {/* Chat Window */}
       <Box
         width={{ base: "100%", lg: "60vw" }}
@@ -166,7 +175,6 @@ const AIChatPage = () => {
                 <BeatLoader size={8} color="gray" />
               </Flex>
             ))}
-          {error && <p>Error: {error.message}</p>}
         </Flex>
         {/* Input Field */}
         <Box position={"absolute"} bottom={0} w="100%">

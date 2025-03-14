@@ -34,6 +34,7 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
     reopenTicketError &&
       toaster.create({
         title: "Error",
+        type: "error",
         description: "Failed to reopen Ticket. Please try again.",
       });
     setClosedDate(ticket.closed_date);
