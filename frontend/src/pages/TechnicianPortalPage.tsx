@@ -18,7 +18,7 @@ const TechnicianPortalPage = () => {
   useEffect(() => {
     if (user?.group !== "technicians") {
       console.log("Access restricted!");
-      navigate(-1); //return to previous page
+      navigate("/");
     }
   }, [user]);
 
