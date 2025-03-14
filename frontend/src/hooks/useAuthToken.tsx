@@ -11,8 +11,13 @@ import useAuthStore from "../stores/AuthStore";
 const useAuthToken = () => {
   const { instance, inProgress } = useMsal();
   const navigate = useNavigate();
-  const { login } = useAuthStore();
+  const { accessToken, setAccessToken, setUser } = useAuthStore();
   const [expiresOn, setExpiresOn] = useState(new Date());
+  const { data: fetchedUser, refetch } = useUsersMe(accessToken);
+
+  useEffect(() => {
+    fetchedUser && accessToken && setUser(fetchedUser);
+  }, [fetchedUser, accessToken]);
 
   const tokenRequest = {
     scopes: ["openid"],
@@ -26,8 +31,8 @@ const useAuthToken = () => {
       instance.setActiveAccount(response.account);
       const accessToken = response.accessToken;
       response.expiresOn && setExpiresOn(response.expiresOn);
-      const fetchedUser = await useUsersMe(accessToken);
-      login(fetchedUser, accessToken);
+      setAccessToken(accessToken);
+      refetch();
     } catch (error) {
       if (error instanceof InteractionRequiredAuthError) {
         navigate("/");

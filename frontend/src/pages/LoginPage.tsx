@@ -8,7 +8,17 @@ import useAuthStore from "../stores/AuthStore";
 const LoginPage = () => {
   const { instance } = useMsal();
   const navigate = useNavigate();
-  const { accessToken, user, login } = useAuthStore();
+  const { accessToken, user, setUser, setAccessToken } = useAuthStore();
+  const {
+    data: fetchedUser,
+    error: userMeError,
+    refetch,
+    isFetching,
+  } = useUsersMe(accessToken);
+
+  useEffect(() => {
+    fetchedUser && accessToken && setUser(fetchedUser);
+  }, [fetchedUser, accessToken]);
 
   useEffect(() => {
     if (user.group === "users") navigate("/my-tickets");
@@ -20,9 +30,8 @@ const LoginPage = () => {
       instance.clearCache();
       const response = await instance.loginPopup();
       instance.setActiveAccount(response.account);
-      const accessToken = response.accessToken;
-      const fetchedUser = await useUsersMe(accessToken);
-      login(fetchedUser, accessToken);
+      setAccessToken(response.accessToken);
+      refetch();
     } catch (error) {
       console.error("Login failed:", error);
     }
@@ -63,7 +72,12 @@ const LoginPage = () => {
           <Button marginLeft={"auto"} onClick={handleLogin}>
             Login
           </Button>
-          {accessToken && !user.group && (
+          {userMeError && (
+            <Text color="red">
+              Login is currently not available. Try again later.
+            </Text>
+          )}
+          {!isFetching && !userMeError && accessToken && !user.group && (
             <Text color="red">No permission to access this Application.</Text>
           )}
         </Card.Footer>
