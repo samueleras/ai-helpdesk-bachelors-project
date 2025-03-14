@@ -16,11 +16,12 @@ import {
   Input,
   Text,
 } from "@chakra-ui/react";
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { IoSend } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
 import { useParams } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
+import { Toaster, toaster } from "@/components/ui/toaster";
 
 interface TicketPageProps {
   ticket_id?: string;
@@ -41,7 +42,15 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
   const forceRerender = () => {
     setRerender((prev) => prev + 1); // Changing state forces a re-render
   };
-  const { mutate } = useInsertTicketMessage();
+  const { mutate, error: unsertTicketMessageError } = useInsertTicketMessage();
+
+  useEffect(() => {
+    unsertTicketMessageError &&
+      toaster.create({
+        title: "Error",
+        description: "Failed to save Message. Please try again.",
+      });
+  }, [unsertTicketMessageError]);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
@@ -84,6 +93,7 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
       gridTemplateColumns={{ base: "1fr", lg: "50% 50%" }}
       maxWidth={{ base: "100%", lg: "calc(100% - 2rem)" }}
     >
+      <Toaster />
       <Grid
         backgroundColor={"white"}
         overflow={{ base: "none", lg: "auto" }}

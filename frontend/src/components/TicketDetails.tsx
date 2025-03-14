@@ -8,28 +8,50 @@ import { dateToString } from "@/services/dateToString";
 import useCloseTicket from "@/hooks/useCloseTicket";
 import useAuthStore from "@/stores/AuthStore";
 import useReopenTicket from "@/hooks/useReopenTicket";
+import { useEffect, useState } from "react";
+import { Toaster, toaster } from "@/components/ui/toaster";
 
 interface TicketDetailsProp {
   ticket: Ticket;
 }
 
 const TicketDetails = ({ ticket }: TicketDetailsProp) => {
-  const { mutate: closeTicket } = useCloseTicket();
-  const { mutate: reopenTicket } = useReopenTicket();
+  const { mutate: closeTicket, error: closeTicketError } = useCloseTicket();
+  const { mutate: reopenTicket, error: reopenTicketError } = useReopenTicket();
   const { accessToken, user } = useAuthStore();
+  const [closedDate, setClosedDate] = useState(ticket.closed_date);
+
+  useEffect(() => {
+    closeTicketError &&
+      toaster.create({
+        title: "Error",
+        description: "Failed to close Ticket. Please try again.",
+      });
+    setClosedDate(ticket.closed_date);
+  }, [closeTicketError]);
+
+  useEffect(() => {
+    reopenTicketError &&
+      toaster.create({
+        title: "Error",
+        description: "Failed to reopen Ticket. Please try again.",
+      });
+    setClosedDate(ticket.closed_date);
+  }, [reopenTicketError]);
 
   const handleCloseTicket = () => {
     closeTicket({ ticket_id: ticket.ticket_id, accessToken });
-    ticket.closed_date = new Date();
+    setClosedDate(new Date());
   };
 
   const handleReopenTicket = () => {
     reopenTicket({ ticket_id: ticket.ticket_id, accessToken });
-    ticket.closed_date = undefined;
+    setClosedDate(undefined);
   };
 
   return (
     <VStack alignItems={"start"} fontSize={"sm"} gap="3">
+      <Toaster />
       <HStack>
         <FaUser />
         <Text>Author:</Text>
@@ -57,11 +79,9 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
       <Flex alignItems={"center"} gap=".5rem" flexWrap={"wrap"}>
         <IoLockClosed />
         <Text>Closed:</Text>
-        <Badge>
-          {ticket.closed_date ? dateToString(ticket.closed_date) : "No"}
-        </Badge>
+        <Badge>{closedDate ? dateToString(closedDate) : "No"}</Badge>
         {user.group === "technicians" &&
-          (!ticket.closed_date ? (
+          (!closedDate ? (
             <Button onClick={handleCloseTicket} h="1.3rem">
               Close Ticket
             </Button>
