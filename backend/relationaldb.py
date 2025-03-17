@@ -12,7 +12,7 @@ from ai_system.vectordb import (
 )
 from backend.pydantic_models import NewTicketMessage, TicketAssignee, TicketFilter, User
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("RELATIONAL_DB " + __name__)
 TESTING = os.getenv("TESTING", "false").lower() in ["true"]
 
 

@@ -11,7 +11,7 @@ import threading
 from custom_types import AppConfig
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("VECTOR_DB " + __name__)
 
 observer_started = False
 

@@ -1,6 +1,6 @@
 {
   "logging": {
-    "logging_level": "DEBUG"
+    "logging_level": "INFO"
   },
   "ollama": {
     "llm": "gemma2:9b-instruct-q4_K_M",

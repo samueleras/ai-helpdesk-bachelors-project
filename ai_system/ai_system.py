@@ -24,7 +24,7 @@ from ai_system.prompts import (
 )
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("AI_SYSTEM " + __name__)
 
 
 @dataclass
@@ -66,6 +66,9 @@ def initialize_langchain(config: AppConfig):
         return cleaned_response.strip()
 
     def generate_query_prompt(state: GraphState):
+        logger.info(
+            "generate_query_prompt",
+        )
         input = state["input"]
         chat_history = state["chat_history"]
         query_prompt = history_aware_query_chain.invoke(
@@ -77,9 +80,9 @@ def initialize_langchain(config: AppConfig):
     def retrieve_documents(state: GraphState):
         query_prompt = state["query_prompt"]
         logger.debug(
-            f"Query Prompt: {query_prompt}",
+            f"query Prompt: {query_prompt}",
         )
-        logger.debug(
+        logger.info(
             "retrieve_documents",
         )
         retrieved_data = retrieve_documents_milvus(query_prompt)
@@ -95,7 +98,7 @@ def initialize_langchain(config: AppConfig):
         return {"documents": documents}
 
     def grade_documents(state: GraphState):
-        logger.debug(
+        logger.info(
             "grade_documents",
         )
         input = state["input"]
@@ -111,11 +114,11 @@ def initialize_langchain(config: AppConfig):
                     "chat_history": chat_history,
                 }
             ).content[0]
-            logger.debug(
+            logger.info(
                 f"Document Grade: {score}",
             )
             if score == "1":
-                logger.debug(
+                logger.info(
                     "Doc appended",
                 )
                 filtered_docs.append(doc)
@@ -127,23 +130,23 @@ def initialize_langchain(config: AppConfig):
         }
 
     def decide_web_search(state: GraphState):
-        logger.debug(
+        logger.info(
             "decide_web_search",
         )
         web_search = state["web_search"]
         ticket = state["ticket"]
         if web_search:
-            logger.debug(
+            logger.info(
                 "perform_web_search",
             )
             return "perform_web_search"
         elif ticket:
-            logger.debug(
+            logger.info(
                 "check_ticket_details_provided",
             )
             return "check_ticket_details_provided"
         else:
-            logger.debug(
+            logger.info(
                 "check_solvability",
             )
             return "check_solvability"
@@ -169,17 +172,17 @@ def initialize_langchain(config: AppConfig):
             raise
 
     def decide_ticket_or_troubelshooting_path(state: GraphState):
-        logger.debug(
+        logger.info(
             "decide_ticket_or_troubelshooting_path",
         )
         ticket = state["ticket"]
         if ticket:
-            logger.debug(
+            logger.info(
                 "check_ticket_details_provided",
             )
             return "check_ticket_details_provided"
         else:
-            logger.debug(
+            logger.info(
                 "check_solvability",
             )
             return "check_solvability"
@@ -205,17 +208,17 @@ def initialize_langchain(config: AppConfig):
         return {"solvable": solvable}
 
     def decide_issue_troubleshootable(state: GraphState):
-        logger.debug(
+        logger.info(
             "decide_issue_troubleshootable",
         )
         solvable = state["solvable"]
         if solvable[0] == "1":
-            logger.debug(
+            logger.info(
                 "generate_troubleshooting_guide",
             )
             return "generate_troubleshooting_guide"
         else:
-            logger.debug(
+            logger.info(
                 "offer_ticket",
             )
             return "offer_ticket"
@@ -229,17 +232,17 @@ def initialize_langchain(config: AppConfig):
         return {"further_details": further_details}
 
     def decide_ticket_details_provided(state: GraphState):
-        logger.debug(
+        logger.info(
             "decide_ticket_details_provided",
         )
         further_details = state["further_details"]
         if further_details:
-            logger.debug(
+            logger.info(
                 "ask_for_ticket_details",
             )
             return "ask_for_ticket_details"
         else:
-            logger.debug(
+            logger.info(
                 "generate_ticket",
             )
             return "generate_ticket"
@@ -283,7 +286,7 @@ def initialize_langchain(config: AppConfig):
             input = state["input"]
             chat_history = state["chat_history"]
             documents = state["documents"]
-            logger.debug(
+            logger.info(
                 "generate_issue_description",
             )
             issue_description = ticket_issue_description_chain.invoke(
@@ -293,7 +296,7 @@ def initialize_langchain(config: AppConfig):
                 }
             ).content
             issue_description = remove_think_tags(issue_description)
-            logger.debug(
+            logger.info(
                 "generate_proposed_solutions",
             )
             proposed_solutions = ticket_propose_solutions_chain.invoke(
@@ -304,14 +307,14 @@ def initialize_langchain(config: AppConfig):
             ).content
             proposed_solutions = remove_think_tags(proposed_solutions)
             generated_ticket = issue_description + "\n" + proposed_solutions
-            logger.debug(
+            logger.info(
                 "generate_ticket_summary",
             )
             ticket_summary = ticket_summary_chain.invoke(
                 {"ticket": [SystemMessage(content=issue_description)]}
             ).content
             ticket_summary = remove_think_tags(ticket_summary)
-            logger.debug(
+            logger.info(
                 "generate_ticket_title",
             )
             ticket_title = ticket_title_chain.invoke(
@@ -420,8 +423,11 @@ def initialize_langchain(config: AppConfig):
         try:
             input = [conversation.pop()]
             chat_history = conversation
+            logger.info(
+                f"Initating AI workflow ...",
+            )
             logger.debug(
-                f"Initate AI workflow with: Question: {input}; Chat_history: {chat_history}; Execution Count: {excecution_count}",
+                f"AI Workflow Parameters: Question: {input}; Chat_history: {chat_history}; Execution Count: {excecution_count}",
             )
             config = {"configurable": {"thread_id": str(uuid.uuid4())}}
             state_dict = custom_graph.invoke(

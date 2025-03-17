@@ -4,11 +4,10 @@ from logging.handlers import RotatingFileHandler
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from ai_system.vectordb import initialize_milvus, store_ticket_milvus, embed_summary
+from ai_system.vectordb import initialize_milvus, embed_summary
 from ai_system.ai_system import initialize_langchain
-from custom_types import TicketMessage, WorkflowResponse, AppConfig
+from custom_types import WorkflowResponse, AppConfig
 from dotenv import load_dotenv
 from backend.pydantic_models import (
     NewTicketMessage,
@@ -68,8 +67,9 @@ uvicorn_logger = logging.getLogger("uvicorn")
 uvicorn_logger.addHandler(file_handler)
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("BACKEND " + __name__)
 
 initialize_milvus(config)
 langchain_model = initialize_langchain(config)
@@ -166,7 +166,7 @@ async def read_users_me(user: Annotated[User, Depends(verify_token)]):
             insert_azure_user(user.user_id, user.user_name, user.group, config)
     except Exception:
         raise HTTPException(status_code=500, detail="Storing user data failed")
-    print(user)
+    logger.info(f"User logged in and requested account details: {user}")
     return user
 
 
