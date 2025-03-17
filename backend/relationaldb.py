@@ -13,6 +13,7 @@ from ai_system.vectordb import (
 from backend.pydantic_models import NewTicketMessage, TicketAssignee, TicketFilter, User
 
 logger = logging.getLogger(__name__)
+TESTING = os.getenv("TESTING", "false").lower() in ["true"]
 
 
 def connect_to_mysql(config: AppConfig) -> None:
@@ -59,6 +60,8 @@ def insert_ticket(
 ) -> int:
     cnx = connect_to_mysql(config)
 
+    cnx.start_transaction()
+
     if not cnx:
         logger.error(
             "Database connection failed",
@@ -73,11 +76,18 @@ def insert_ticket(
         query = "INSERT INTO tickets (title, content, summary_vector, author_id) VALUES (%s, %s, %s, %s)"
         values = (title, content, summary_json, author_id)
         cursor.execute(query, values)
-        cnx.commit()
-        ticket_id = cursor.lastrowid  # Get auto-generated ticket_id
-        logger.info(
-            "Successfully inserted ticket into MySQL.",
-        )
+
+        ticket_id = cursor.lastrowid  # Get auto generated ticket_id
+
+        if TESTING:
+            cnx.rollback()
+            logger.info(f"Test insert rolled back for Ticket {ticket_id}")
+        else:
+            cnx.commit()
+            logger.info(
+                "Successfully inserted ticket into MySQL.",
+            )
+
         return ticket_id
 
     except Exception as e:
@@ -194,10 +204,15 @@ def insert_ticket_message(
             new_ticket_message.created_at,
         )
         cursor.execute(query, values)
-        cnx.commit()
-        logger.info(
-            f"Ticket {new_ticket_message.ticket_id}: Added new Ticket Message of user {user.user_name} into database",
-        )
+
+        if TESTING:
+            cnx.rollback()
+            logger.info(f"Test insert rolled back for TicketMessage")
+        else:
+            cnx.commit()
+            logger.info(
+                f"Ticket {new_ticket_message.ticket_id}: Added new Ticket Message of user {user.user_name} into database",
+            )
 
     except Exception as e:
         logger.error(
@@ -228,18 +243,23 @@ def close_ticket(ticket_id: int, config: AppConfig) -> None:
     try:
         query = "UPDATE tickets SET closed_date = NOW() WHERE ticket_id = (%s);"
         cursor.execute(query, (ticket_id,))
-        cnx.commit()
-        logger.info(
-            f"Ticket {ticket_id}: Closed.",
-        )
 
-        query = "SELECT ticket_id, title, summary_vector FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE ticket_id = %s"
-        cursor.execute(query, (ticket_id,))
-        ticket = cursor.fetchone()
-
-        if "summary_vector" in ticket:
-            summary_vector = json.loads(ticket["summary_vector"])
-            store_ticket_milvus(ticket["ticket_id"], summary_vector, ticket["title"])
+        if TESTING:
+            cnx.rollback()
+            logger.info(f"Test close Ticket rolled back for Ticket {ticket_id}")
+        else:
+            query = "SELECT ticket_id, title, summary_vector FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE ticket_id = %s"
+            cursor.execute(query, (ticket_id,))
+            ticket = cursor.fetchone()
+            if "summary_vector" in ticket:
+                summary_vector = json.loads(ticket["summary_vector"])
+                store_ticket_milvus(
+                    ticket["ticket_id"], summary_vector, ticket["title"]
+                )
+            cnx.commit()
+            logger.info(
+                f"Ticket {ticket_id}: Closed.",
+            )
 
     except Exception as e:
         logger.error(
@@ -271,11 +291,16 @@ def reopen_ticket(ticket_id: int, config: AppConfig) -> None:
         query = "UPDATE tickets SET closed_date = NULL WHERE ticket_id = (%s);"
         values = (ticket_id,)
         cursor.execute(query, values)
-        cnx.commit()
-        logger.info(
-            f"Ticket {ticket_id}: Reopened.",
-        )
-        remove_ticket_milvus(ticket_id=ticket_id)
+
+        if TESTING:
+            cnx.rollback()
+            logger.info(f"Test reopen rolled back for Ticket {ticket_id}")
+        else:
+            remove_ticket_milvus(ticket_id=ticket_id)
+            cnx.commit()
+            logger.info(
+                f"Ticket {ticket_id}: Reopened.",
+            )
 
     except Exception as e:
         logger.error(
@@ -483,15 +508,19 @@ def assign_ticket(ticket: TicketAssignee, config: AppConfig) -> None:
     cursor = cnx.cursor()
 
     try:
-        print(ticket.assignee_id, ticket.ticket_id)
         if ticket.assignee_id == "Unassigned":
             ticket.assignee_id = None
         query = "UPDATE tickets SET assignee_id = (%s) WHERE ticket_id = (%s);"
         cursor.execute(query, (ticket.assignee_id, ticket.ticket_id))
-        cnx.commit()
-        logger.info(
-            f"Ticket {ticket.ticket_id}: Assigned to {ticket.assignee_id}.",
-        )
+
+        if TESTING:
+            cnx.rollback()
+            logger.info(f"Test assign rolled back for Ticket {ticket.ticket_id}")
+        else:
+            cnx.commit()
+            logger.info(
+                f"Ticket {ticket.ticket_id}: Assigned to {ticket.assignee_id}.",
+            )
 
     except Exception as e:
         logger.error(
@@ -529,10 +558,15 @@ def insert_azure_user(
             user_group,
         )
         cursor.execute(query, values)
-        cnx.commit()
-        logger.info(
-            f"Inserted user {user_name} into database",
-        )
+
+        if TESTING:
+            cnx.rollback()
+            logger.info(f"Test insert rolled back for azure user {user_name}")
+        else:
+            cnx.commit()
+            logger.info(
+                f"Inserted user {user_name} into database",
+            )
 
     except Exception as e:
         logger.error(
