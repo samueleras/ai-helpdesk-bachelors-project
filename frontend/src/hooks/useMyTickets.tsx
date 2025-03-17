@@ -10,7 +10,6 @@ const useMyTickets = (accessToken: string, filter?: Filter) => {
     queryKey: ["mytickets", filter],
     queryFn: () => ticketClient.getAllFiltered(filter || {}, accessToken),
     retry: 2,
-    staleTime: 2 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 };

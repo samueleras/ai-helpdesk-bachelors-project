@@ -22,6 +22,10 @@ const TicketDetails = ({ ticket }: TicketDetailsProp) => {
   const [closedDate, setClosedDate] = useState(ticket.closed_date);
 
   useEffect(() => {
+    setClosedDate(ticket.closed_date);
+  }, [ticket]);
+
+  useEffect(() => {
     closeTicketError &&
       toaster.create({
         title: "Error",

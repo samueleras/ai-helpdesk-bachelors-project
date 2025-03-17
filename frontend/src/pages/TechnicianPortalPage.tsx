@@ -3,7 +3,7 @@ import TicketListContainer from "@/components/TicketListContainer";
 import useFilteredTickets from "@/hooks/useFilteredTickets";
 import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import useAuthStore from "../stores/AuthStore";
 import TicketFilter from "@/components/TicketFilter";
 import useFilterStore from "@/stores/FilterStore";
@@ -23,15 +23,14 @@ const TechnicianPortalPage = () => {
     }
   }, [user]);
 
-  const {
-    data: ticketList,
-    error: ticketsError,
-    refetch,
-  } = useFilteredTickets(accessToken, {
-    page: page,
-    page_size: pageSize,
-    ...ticketFilter,
-  });
+  const { data: ticketList, error: ticketsError } = useFilteredTickets(
+    accessToken,
+    {
+      page: page,
+      page_size: pageSize,
+      ...ticketFilter,
+    }
+  );
 
   useEffect(() => {
     if (ticketsError) {
@@ -42,12 +41,6 @@ const TechnicianPortalPage = () => {
       });
     }
   }, [ticketsError]);
-
-  const location = useLocation();
-
-  useEffect(() => {
-    refetch(); // refetch when navigating back to the page
-  }, [location.pathname]);
 
   return (
     <>
