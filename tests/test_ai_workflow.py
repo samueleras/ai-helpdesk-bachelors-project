@@ -1,6 +1,7 @@
 import os
 from typing import Optional, TypedDict
 from fastapi.testclient import TestClient
+from authentication import fetch_user_access_token
 from backend.main import app
 from utils import load_json
 from custom_types import AppConfig
@@ -10,10 +11,7 @@ client = TestClient(app)
 app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 config: AppConfig = load_json(os.path.join(app_path, "config.json"))
 
-AZURE_USER_TESTING_ACCESS_TOKEN = os.getenv("AZURE_USER_TESTING_ACCESS_TOKEN")
-assert (
-    AZURE_USER_TESTING_ACCESS_TOKEN
-), "AZURE_USER_TESTING_ACCESS_TOKEN is not set in environment variables!"
+AZURE_USER_TESTING_ACCESS_TOKEN = fetch_user_access_token()
 
 
 class APIWorkflowResponse(TypedDict):
@@ -96,6 +94,7 @@ def test_ai_workflow_invalid_input():
         "ticket": False,
         "execution_count": 1,
     }
+
     response = client.post(
         "/api/init_ai_workflow",
         headers={"Authorization": f"Bearer {AZURE_USER_TESTING_ACCESS_TOKEN}"},

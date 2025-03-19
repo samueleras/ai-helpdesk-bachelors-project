@@ -2,16 +2,13 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 from backend.main import app
+from authentication import fetch_technician_access_token
 from datetime import datetime
 
 client = TestClient(app)
 
-AZURE_TECHNICIAN_TESTING_ACCESS_TOKEN = os.getenv(
-    "AZURE_TECHNICIAN_TESTING_ACCESS_TOKEN"
-)
-assert (
-    AZURE_TECHNICIAN_TESTING_ACCESS_TOKEN
-), "AZURE_TECHNICIAN_TESTING_ACCESS_TOKEN is not set in environment variables!"
+AZURE_TECHNICIAN_TESTING_ACCESS_TOKEN = fetch_technician_access_token()
+
 VALID_TICKET_ID = os.getenv("VALID_TICKET_ID")
 assert VALID_TICKET_ID, "VALID_TICKET_ID is not set in environment variables!"
 

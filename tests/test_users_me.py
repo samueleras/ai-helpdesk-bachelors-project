@@ -1,14 +1,12 @@
 import os
 from fastapi.testclient import TestClient
 from backend.main import app
+from authentication import fetch_user_access_token
 from backend.pydantic_models import User
 
 client = TestClient(app)
 
-AZURE_USER_TESTING_ACCESS_TOKEN = os.getenv("AZURE_USER_TESTING_ACCESS_TOKEN")
-assert (
-    AZURE_USER_TESTING_ACCESS_TOKEN
-), "AZURE_USER_TESTING_ACCESS_TOKEN is not set in environment variables!"
+AZURE_USER_TESTING_ACCESS_TOKEN = fetch_user_access_token()
 
 
 def test_read_users_me():
