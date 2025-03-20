@@ -169,7 +169,6 @@ def initialize_langchain(config: AppConfig):
                 f"Error in perform_web_search: {e}",
                 exc_info=True,
             )
-            raise
 
     def decide_ticket_or_troubelshooting_path(state: GraphState):
         logger.info(
