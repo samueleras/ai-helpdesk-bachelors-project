@@ -4,6 +4,7 @@ from logging.handlers import RotatingFileHandler
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from ai_system.vectordb import initialize_milvus, embed_summary
 from ai_system.ai_system import initialize_langchain
@@ -347,9 +348,10 @@ async def assign_ticket_db(
         raise HTTPException(status_code=500, detail="Failed to close ticket")
 
 
-# Serve frontend files
-app.mount(
-    "/",
-    StaticFiles(directory=os.path.join(app_path, "frontend", "dist"), html=True),
-    name="static",
-)
+app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+
+
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    frontend_path = os.path.join(app_path, "frontend", "dist", "index.html")
+    return FileResponse(frontend_path)
