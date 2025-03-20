@@ -351,6 +351,12 @@ async def assign_ticket_db(
 app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
 
 
+@app.get("/favicon.png")
+async def favicon():
+    favicon_path = os.path.join(app_path, "frontend", "dist", "favicon.png")
+    return FileResponse(favicon_path, media_type="image/png")
+
+
 @app.get("/{full_path:path}")
 async def catch_all(full_path: str):
     frontend_path = os.path.join(app_path, "frontend", "dist", "index.html")
