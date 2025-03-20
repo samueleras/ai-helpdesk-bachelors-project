@@ -50,12 +50,12 @@ export const AssignDropdown = ({ ticket }: AssignDropdownProps) => {
     <MenuRoot>
       <Toaster />
       <MenuTrigger asChild h="1.3rem">
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" className="btn-assign">
           {assigneeName || "Unassigned"}
         </Button>
       </MenuTrigger>
       <MenuContent>
-        <MenuItemGroup>
+        <MenuItemGroup className="assignee-dropdown">
           <MenuItem
             onClick={() => handleClick("Unassigned")}
             value="Unassigned"
