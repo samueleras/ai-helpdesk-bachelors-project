@@ -20,8 +20,10 @@ export const TicketListItem = ({ ticket }: TicketListItemProps) => {
       <Image
         display={{ base: "none", md: "block" }}
         objectFit="cover"
+        h="100%"
+        w="100%"
         maxW="35%"
-        maxH={{ base: "450px", md: "350px" }}
+        maxH={{ base: "450px", md: "370px" }}
         src={ticketImage}
         alt="Ticket Dummy Image"
         onClick={() => navigate(`/ticket/${ticket.ticket_id}`)}
