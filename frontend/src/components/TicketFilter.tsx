@@ -184,6 +184,7 @@ const TicketFilter = () => {
         </Box>
         <Input
           placeholder={"Search for Ticket Title"}
+          value={ticketFilter.search ?? ""}
           onChange={(e) => {
             if (e.target.value == "") {
               const { search, ...updatedFilter } = ticketFilter;
