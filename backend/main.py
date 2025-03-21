@@ -2,7 +2,7 @@ import logging
 import json
 from logging.handlers import RotatingFileHandler
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -105,6 +105,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+BLOCKED_PATHS = {"/._darcs", "/.bzr", "/.hg", "/BitKeeper"}
+
+
+@app.middleware("http")
+async def block_hidden_files(request: Request, call_next):
+    if request.url.path in BLOCKED_PATHS:
+        return Response("403 Forbidden", status_code=403)
+    return await call_next(request)
+
 
 @app.middleware("http")
 async def add_security_headers(request, call_next):
@@ -112,9 +121,9 @@ async def add_security_headers(request, call_next):
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self'; "
-        "style-src 'self'; "
+        "style-src 'self' 'unsafe-inline'; "
         "img-src 'self'; "
-        "connect-src 'self'; "
+        "connect-src 'self' https://login.microsoftonline.com; "
         "form-action 'self'; "
         "frame-ancestors 'none'; "
         "object-src 'none';"
