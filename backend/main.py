@@ -373,7 +373,18 @@ async def assign_ticket_db(
         raise HTTPException(status_code=500, detail="Failed to close ticket")
 
 
-app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+class NoTimestampStaticFiles(StaticFiles):
+    async def get_response(self, path: str, request: Request):
+        response = await super().get_response(path, request)
+        for header in ["last-modified", "etag"]:
+            if header in response.headers:
+                del response.headers[header]
+        return response
+
+
+app.mount(
+    "/assets", NoTimestampStaticFiles(directory="frontend/dist/assets"), name="assets"
+)
 
 
 @app.get("/favicon.png")
