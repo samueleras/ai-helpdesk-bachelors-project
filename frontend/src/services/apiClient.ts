@@ -2,10 +2,8 @@ import axios, { AxiosRequestConfig } from "axios";
 import { Filter } from "../entities/Filter";
 import { WorkflowRequest } from "../entities/WorkflowRequest";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
 const axiosInstance = axios.create({
-  baseURL: BACKEND_URL,
+  baseURL: "",
 });
 
 class APIClient<T> {
