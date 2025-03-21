@@ -131,6 +131,16 @@ async def add_security_headers(request, call_next):
     return response
 
 
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    if "content-type" not in response.headers:
+        response.headers["Content-Type"] = "application/octet-stream"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+
+    return response
+
+
 # Verify Token and Extract Current User and Groups
 async def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> User:
     headers = {"Authorization": f"Bearer {token}"}
