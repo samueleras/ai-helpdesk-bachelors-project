@@ -40,24 +40,24 @@ const LoginPage = () => {
   return (
     <Flex
       minH="100vh"
+      h="100vh"
       align="center"
-      justify="center"
+      paddingTop="10vh"
       backgroundColor={"darkslategray"}
       bgSize="cover"
       bgRepeat="no-repeat"
+      flexDirection="column"
     >
       <Heading
         color="white"
         fontSize={{ base: "4rem", lg: "6rem" }}
-        position="fixed"
-        top="7rem"
-        left="50%"
-        transform="translateX(-50%)"
         whiteSpace={"nowrap"}
+        lineHeight="1"
+        marginBottom="calc(30vh - 7rem)"
       >
         AI Helpdesk
       </Heading>
-      <Card.Root width="320px">
+      <Card.Root width="320px" justifySelf="center">
         <Card.Body gap="2">
           <Avatar.Root colorPalette="blue">
             <Avatar.Fallback />
