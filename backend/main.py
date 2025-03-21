@@ -132,16 +132,8 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-
-    return response
-
-
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
     if "content-type" not in response.headers:
         response.headers["Content-Type"] = "application/octet-stream"
-    response.headers["X-Content-Type-Options"] = "nosniff"
 
     return response
 
