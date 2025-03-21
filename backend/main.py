@@ -116,8 +116,9 @@ async def block_hidden_files(request: Request, call_next):
 
 
 @app.middleware("http")
-async def add_security_headers(request, call_next):
+async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
+
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self'; "
@@ -128,6 +129,11 @@ async def add_security_headers(request, call_next):
         "frame-ancestors 'none'; "
         "object-src 'none';"
     )
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
     return response
 
 
