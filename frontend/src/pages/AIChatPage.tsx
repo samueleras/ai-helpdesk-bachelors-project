@@ -120,8 +120,8 @@ const AIChatPage = () => {
   return (
     <Flex
       backgroundColor="darkslategray"
-      paddingInline={{ base: "1rem", sm: "2rem" }}
       h={`calc(100vh - 4rem)`}
+      p={{ base: "1rem", sm: "2rem" }}
       justifyContent="center"
       alignItems={"center"}
       flexDirection={"column"}
@@ -131,7 +131,8 @@ const AIChatPage = () => {
       {/* Chat Window */}
       <Box
         width={{ base: "100%", lg: "60vw" }}
-        height="80vh"
+        flex="1"
+        overflow="auto"
         border="1px solid gray"
         backgroundColor={"gray.100"}
         borderRadius={".5rem"}
@@ -139,7 +140,7 @@ const AIChatPage = () => {
       >
         <Flex
           overflowY="scroll"
-          h={`calc(80vh - 3.2rem)`}
+          h={`calc(100% - 3.2rem)`}
           p="3"
           gap={3}
           flexDirection={"column"}
