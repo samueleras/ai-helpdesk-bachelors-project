@@ -105,11 +105,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-BLOCKED_PATHS = {"/._darcs", "/.bzr", "/.hg", "/BitKeeper"}
-
 
 @app.middleware("http")
 async def block_hidden_files(request: Request, call_next):
+    BLOCKED_PATHS = {"/._darcs", "/.bzr", "/.hg", "/BitKeeper"}
     if request.url.path in BLOCKED_PATHS:
         return Response("403 Forbidden", status_code=403)
     return await call_next(request)
