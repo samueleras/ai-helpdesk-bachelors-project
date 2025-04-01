@@ -1,3 +1,4 @@
+from datetime import timezone
 import logging
 import json
 import os
@@ -118,7 +119,8 @@ def get_ticket_messages(ticket_id: int, config: AppConfig) -> List[TicketMessage
         query = "SELECT m.message, u.user_name as author_name, u.user_group as `group`, m.created_at FROM ticket_messages m INNER JOIN azure_users u ON m.author_id = u.user_id WHERE ticket_id = %s ORDER BY created_at ASC"
         cursor.execute(query, (ticket_id,))
         messages = cursor.fetchall() or []
-
+        for row in messages:
+            row["created_at"] = row["created_at"].replace(tzinfo=timezone.utc)
         return messages
 
     except Exception as e:
@@ -149,6 +151,9 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
         query = "SELECT ticket_id, title, content, summary_vector, creation_date, closed_date, u.user_name as author_name, a.user_name as assignee_name FROM tickets t INNER JOIN azure_users u ON t.author_id = u.user_ID LEFT JOIN azure_users a on t.assignee_id = a.user_id WHERE ticket_id = %s"
         cursor.execute(query, (ticket_id,))
         ticket = cursor.fetchone()
+        ticket["creation_date"] = ticket["creation_date"].astimezone(timezone.utc)
+        if ticket["closed_date"]:
+            ticket["closed_date"] = ticket["closed_date"].astimezone(timezone.utc)
 
         ticket["similar_tickets"] = []
         if "summary_vector" in ticket and user.group == "technicians":

@@ -77,10 +77,11 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
       ticket?.ticket_messages.push(newTicketMessageDisplayFormat) &&
         forceRerender();
       /* insert into database by calling api via mutationQuery */
+      let utcISOString = now.toISOString();
       let newTicketMessageInsertFormat: NewTicketMessage = {
         ticket_id: Number(params.id),
         message: inputValue,
-        created_at: now,
+        created_at: utcISOString,
       };
       if (params.id !== undefined) {
         mutate({
