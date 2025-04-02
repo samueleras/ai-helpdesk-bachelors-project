@@ -95,6 +95,13 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
     }
   };
 
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  });
+
   return (
     <Grid
       paddingBlock={"2rem"}
@@ -175,6 +182,7 @@ const TicketPage = ({ ticket_id }: TicketPageProps) => {
               key={index}
             />
           ))}
+          <Box ref={messagesEndRef} />
         </Flex>
         {/* Input Field */}
         <Box

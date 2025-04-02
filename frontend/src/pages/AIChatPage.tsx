@@ -88,6 +88,13 @@ const AIChatPage = () => {
     }
   }, [aiWorkflowError]);
 
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [conversation, isFetching]);
+
   const handleTicketCreation = () => {
     setTicketButton(false);
     handleSubmit("Please create a Ticket.");
@@ -176,6 +183,7 @@ const AIChatPage = () => {
                 <BeatLoader size={8} color="gray" />
               </Flex>
             ))}
+          <Box ref={messagesEndRef} />
         </Flex>
         {/* Input Field */}
         <Box position={"absolute"} bottom={0} w="100%">
