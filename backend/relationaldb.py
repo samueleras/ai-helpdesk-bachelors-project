@@ -163,7 +163,7 @@ def get_ticket(ticket_id: int, user: User, config: AppConfig) -> Ticket:
                 summary_vector, ticket["ticket_id"]
             )
             filtered_similar_tickets = [
-                item for item in similar_tickets if item["distance"] >= 0.6
+                item for item in similar_tickets if item["distance"] >= 0.7
             ]
             ticket["similar_tickets"] = filtered_similar_tickets
 
