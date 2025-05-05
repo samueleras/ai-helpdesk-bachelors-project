@@ -153,7 +153,7 @@ const AIChatPage = () => {
           flexDirection={"column"}
         >
           {conversation.length === 0 &&
-            "Start a conversation by stating and describing your issue ..."}
+            "Start a conversation by describing your issue. Please include as much detail as possible so the AI can understand and assist you effectively."}
           {conversation.map((message, index) => (
             <ChatMessage
               name={message[0] == "ai" ? "AI" : user.user_name ?? "User"}
