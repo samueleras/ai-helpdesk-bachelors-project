@@ -275,6 +275,7 @@ class DirectoryWatcher(FileSystemEventHandler):
                     collection_name="collection_rag",
                     filter=f'metadata == "{file_name}"',
                 )
+                milvus_client.flush("collection_rag")
                 logger.info(
                     f"Deleted RAG document: {res}",
                 )
@@ -347,7 +348,9 @@ def initialize_milvus(config_file: AppConfig):
             )
             print(f"Deletion result: {result}")
         except Exception as e:
-            print(f"Error during deletion: {e}") """
+            print(f"Error during deletion: {e}")
+            milvus_client.flush("collection_rag")
+        """
         _initialize_directory(
             milvus_client, config["milvus"]["rag_documents_folder_absolute_path"]
         )
@@ -363,6 +366,24 @@ def initialize_milvus(config_file: AppConfig):
         logger.info(
             "Milvus DB successfully initialized.",
         )
+        try:
+            result = milvus_client.query(
+                collection_name="collection_rag",
+                filter="id >= 0",
+                output_fields=["id", "metadata"],
+            )
+            logger.info(f"Vectors in collection_rag: {result}")
+        except Exception as e:
+            logger.warning(f"Error during query: {e}")
+        try:
+            result = milvus_client.query(
+                collection_name="collection_ticket",
+                filter="id >= 0",
+                output_fields=["id", "title"],
+            )
+            logger.info(f"Vectors in collection_ticket: {result}")
+        except Exception as e:
+            logger.warning(f"Error during query: {e}")
     except Exception as e:
         logger.critical(
             f"Milvus initialization failed: {e}",
@@ -435,6 +456,7 @@ def remove_ticket_milvus(ticket_id: int) -> None:
                 collection_name="collection_ticket",
                 filter=f"id == {ticket_id}",
             )
+            milvus_client.flush("collection_ticket")
             logger.info(
                 f"Removed ticket with id: {ticket_id} from Milvus database.",
             )
